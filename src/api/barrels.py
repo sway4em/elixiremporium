@@ -45,12 +45,12 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     with db.engine.begin() as connection:
-        result = connection.execute(text("SELECT num_green_ml, num_green_potions, gold FROM global_inventory"))
+        result = connection.execute(text("SELECT num_green_ml, num_green_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
         print(f"Inventory: {inventory}")
-        num_green_ml = inventory[0]
-        num_green_potions = inventory[1]
-        gold = inventory[2]
+        num_green_ml = inventory["num_green_ml"]
+        num_green_potions = inventory["num_green_potions"]
+        gold = inventory["gold"]
     
     plan = []
     if num_green_potions < 10:

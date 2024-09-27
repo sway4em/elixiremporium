@@ -50,11 +50,11 @@ def get_bottle_plan():
     with db.engine.begin() as connection:
         result = connection.execute(
             text("SELECT num_green_ml FROM global_inventory")
-        )
+        ).mappings()
 
         inventory = result.fetchone()
         
-        num_green_ml = inventory[0]
+        num_green_ml = inventory["num_green_ml"]
 
         potions_to_bottle = num_green_ml // 100  # 100 ml per potion bottle
     

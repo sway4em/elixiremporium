@@ -27,14 +27,14 @@ def get_inventory():
     """
     try:
         with db.engine.connect() as connection:
-            result = connection.execute(sqlalchemy.text(sql_to_execute))
+            result = connection.execute(sqlalchemy.text(sql_to_execute)).mappings()
             row = result.fetchone()
 
             if row:
                 return {
-                    "number_of_potions": row.num_green_potions,
-                    "ml_in_barrels": row.num_green_ml,
-                    "gold": row.gold
+                    "number_of_potions": row['num_green_potions'],
+                    "ml_in_barrels": row['num_green_ml'],
+                    "gold": row['gold']
                 }
             else:
                 return {"error": "No inventory data found"}
