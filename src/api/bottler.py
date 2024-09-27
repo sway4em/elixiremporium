@@ -2,6 +2,10 @@ from fastapi import APIRouter, Depends
 from enum import Enum
 from pydantic import BaseModel
 from src.api import auth
+import sqlalchemy
+from src import database as db
+from sqlalchemy import text
+from colorama import Fore, Style
 
 router = APIRouter(
     prefix="/bottler",
@@ -16,9 +20,20 @@ class PotionInventory(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
-    print(f"potions delievered: {potions_delivered} order_id: {order_id}")
+    total_potions = 0
+    
+    for potion in potions_delivered:
+        total_potions += potion.quantity
 
-    return "OK"
+    with db.engine.begin() as connection:
+        connection.execute(
+            text("UPDATE global_inventory SET num_green_potions = num_green_potions + :total_potions"),
+            {"total_potions": total_potions}
+        )
+    
+    print(f"Potions delivered: {potions_delivered} | Order ID: {order_id}")
+
+    return {"status": "success", "total_potions_delivered": total_potions}
 
 @router.post("/plan")
 def get_bottle_plan():
@@ -30,14 +45,32 @@ def get_bottle_plan():
     # green potion to add.
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
-    # Initial logic: bottle all barrels into red potions.
+    # Current logic: bottle all available green ml into green potions.
+    
+    with db.engine.begin() as connection:
+        # Query the database for green potion ml
+        result = connection.execute(
+            text("SELECT num_green_ml FROM global_inventory")
+        )
 
+        # Fetch the result
+        inventory = result.fetchone()
+        
+        # Access using index since fetchone() returns a tuple
+        num_green_ml = inventory[0]
+
+        # Calculate how many potions can be bottled (100 ml = 1 potion)
+        potions_to_bottle = num_green_ml // 100  # 100 ml per potion bottle
+    
+    print(Fore.CYAN + f"Inventory retrieved: {num_green_ml} ml" + Style.RESET_ALL)
+    print(Fore.CYAN + f"Potions to bottle: {potions_to_bottle}" + Style.RESET_ALL)
+    
     return [
-            {
-                "potion_type": [100, 0, 0, 0],
-                "quantity": 5,
-            }
-        ]
+        {
+            "potion_type": [0, 100, 0, 0],  # Green potion
+            "quantity": potions_to_bottle,
+        }
+    ]
 
 if __name__ == "__main__":
     print(get_bottle_plan())

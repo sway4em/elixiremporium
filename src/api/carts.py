@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from src.api import auth
 from enum import Enum
+from src import database as db
+from sqlalchemy import text
 
 router = APIRouter(
     prefix="/carts",
