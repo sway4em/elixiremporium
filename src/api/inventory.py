@@ -11,11 +11,11 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-from fastapi import APIRouter
-import sqlalchemy
-from src import database as db
+# from fastapi import APIRouter
+# import sqlalchemy
+# from src import database as db
 
-router = APIRouter()
+# router = APIRouter()
 
 @router.get("/audit")
 def get_inventory():
