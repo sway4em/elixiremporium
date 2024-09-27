@@ -48,18 +48,14 @@ def get_bottle_plan():
     # Current logic: bottle all available green ml into green potions.
     
     with db.engine.begin() as connection:
-        # Query the database for green potion ml
         result = connection.execute(
             text("SELECT num_green_ml FROM global_inventory")
         )
 
-        # Fetch the result
         inventory = result.fetchone()
         
-        # Access using index since fetchone() returns a tuple
         num_green_ml = inventory[0]
 
-        # Calculate how many potions can be bottled (100 ml = 1 potion)
         potions_to_bottle = num_green_ml // 100  # 100 ml per potion bottle
     
     print(Fore.CYAN + f"Inventory retrieved: {num_green_ml} ml" + Style.RESET_ALL)
@@ -67,7 +63,7 @@ def get_bottle_plan():
     
     return [
         {
-            "potion_type": [0, 100, 0, 0],  # Green potion
+            "potion_type": [0, 100, 0, 0],
             "quantity": potions_to_bottle,
         }
     ]
