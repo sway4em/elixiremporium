@@ -19,7 +19,7 @@ def get_catalog():
             "SELECT num_green_potions FROM global_inventory"
         )).mappings()
         inventory = result.fetchone()
-        print(Fore.GREEN + f"Inventory retrieved: {inventory}" + Style
+        print(Fore.GREEN + f"Inventory retrieved: {inventory}" + Style.RESET_ALL)
         num_green_potions = inventory['num_green_potions']
 
         catalog = [
