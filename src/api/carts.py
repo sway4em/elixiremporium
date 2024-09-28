@@ -4,6 +4,7 @@ from src.api import auth
 from enum import Enum
 from src import database as db
 from sqlalchemy import text
+from colorama import Fore, Style
 
 router = APIRouter(
     prefix="/carts",
@@ -19,7 +20,7 @@ class search_sort_options(str, Enum):
 
 class search_sort_order(str, Enum):
     asc = "asc"
-    desc = "desc"   
+    desc = "desc"
 
 @router.get("/search/", tags=["search"])
 def search_orders(
@@ -32,7 +33,7 @@ def search_orders(
     """
     Search for cart line items by customer name and/or potion sku.
 
-    Customer name and potion sku filter to orders that contain the 
+    Customer name and potion sku filter to orders that contain the
     string (case insensitive). If the filters aren't provided, no
     filtering occurs on the respective search term.
 
@@ -48,7 +49,7 @@ def search_orders(
 
     The response itself contains a previous and next page token (if
     such pages exist) and the results as an array of line items. Each
-    line item contains the line item id (must be unique), item sku, 
+    line item contains the line item id (must be unique), item sku,
     customer name, line item total (in gold), and timestamp of the order.
     Your results must be paginated, the max results you can return at any
     time is 5 total line items.
@@ -79,7 +80,10 @@ def post_visits(visit_id: int, customers: list[Customer]):
     """
     Which customers visited the shop today?
     """
-    print(customers)
+    print(Fore.RED + "Calling /visits/{visit_id} endpoint")
+    print(Fore.YELLOW + f"visit_id: {visit_id}")
+    print(Fore.GREEN + f"customers: {customers}")
+    print(Style.RESET_ALL)
 
     return "OK"
 
@@ -87,6 +91,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
+    print(Fore.RED + "Calling / create cart endpoint")
     return {"cart_id": 1}
 
 

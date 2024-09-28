@@ -4,6 +4,7 @@ from src.api import auth
 import math
 import sqlalchemy
 from src import database as db
+from colorama import Fore, Style
 
 router = APIRouter(
     prefix="/inventory",
@@ -22,6 +23,7 @@ def get_inventory():
     """
     Retrieve the current inventory status from the database.
     """
+    print(Fore.GREEN + "Calling get_inventory()" + Style.RESET_ALL)
     sql_to_execute = """
     SELECT num_green_potions, num_green_ml, gold FROM global_inventory
     """
@@ -31,6 +33,10 @@ def get_inventory():
             row = result.fetchone()
 
             if row:
+                print(Fore.GREEN + "Inventory data found" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of potions: {row['num_green_potions']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of ml: {row['num_green_ml']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Gold: {row['gold']}" + Style.RESET_ALL)
                 return {
                     "number_of_potions": row['num_green_potions'],
                     "ml_in_barrels": row['num_green_ml'],
@@ -50,6 +56,7 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
 
+    print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL
     return {
         "potion_capacity": 0,
         "ml_capacity": 0

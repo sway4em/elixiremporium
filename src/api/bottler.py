@@ -20,19 +20,22 @@ class PotionInventory(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     """ """
+    print(Fore.RED + f"Calling /bottler/deliver/{order_id}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"Delivering potions for order ID: {order_id}" + Style.RESET_ALL)
     total_potions = 0
-    
+
     for potion in potions_delivered:
         total_potions += potion.quantity
 
     with db.engine.begin() as connection:
+        print(Fore.CYAN + f"Updating global inventory" + Style.RESET_ALL)
         connection.execute(
             text("UPDATE global_inventory SET num_green_potions = num_green_potions + :total_potions"),
             {"total_potions": total_potions}
         )
-    
-    print(f"Potions delivered: {potions_delivered} | Order ID: {order_id}")
 
+
+    print(Fore.GREEN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
     return {"status": "success", "total_potions_delivered": total_potions}
 
 @router.post("/plan")
@@ -46,21 +49,22 @@ def get_bottle_plan():
     # Expressed in integers from 1 to 100 that must sum up to 100.
 
     # Current logic: bottle all available green ml into green potions.
-    
+
+    print(Fore.RED + f"Calling /bottler/plan" + Style.RESET_ALL)
     with db.engine.begin() as connection:
         result = connection.execute(
             text("SELECT num_green_ml FROM global_inventory")
         ).mappings()
 
         inventory = result.fetchone()
-        
+        print(Fore.CYAN + f"Inventory: {inventory}" + Style.RESET_ALL)
         num_green_ml = inventory["num_green_ml"]
 
         potions_to_bottle = num_green_ml // 100  # 100 ml per potion bottle
-    
+
     print(Fore.CYAN + f"Inventory retrieved: {num_green_ml} ml" + Style.RESET_ALL)
     print(Fore.CYAN + f"Potions to bottle: {potions_to_bottle}" + Style.RESET_ALL)
-    
+
     return [
         {
             "potion_type": [0, 100, 0, 0],

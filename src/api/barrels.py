@@ -24,13 +24,19 @@ class Barrel(BaseModel):
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     """ """
+    print(Fore.RED + f"Calling post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
+    print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     total_green_ml = 0
+    print(Fore.yellow + f"Iterating through barrels_delivered" + Style.RESET_ALL)
 
     for barrel in barrels_delivered:
         if barrel.potion_type == [0, 100, 0, 0]:
+            print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
             total_green_ml += barrel.ml_per_barrel
+            print(Fore.YELLOW + f"Total green ml: {total_green_ml}" + Style.RESET_ALL)
 
     if total_green_ml > 0:
+        print(Fore.YELLOW + f"Updating global_inventory with total_green_ml: {total_green_ml}" + Style.RESET_ALL)
         with db.engine.begin() as connection:
             connection.execute(
                 text("UPDATE global_inventory SET num_green_ml = num_green_ml + :total_green_ml"),
@@ -44,16 +50,19 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
+    print(Fore.RED + f"Calling get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
         result = connection.execute(text("SELECT num_green_ml, num_green_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
-        print(f"Inventory: {inventory}")
+        print(Fore.YELLOW + f"Fetching inventory: {inventory}" + Style.RESET_ALL)
+        print(Fore.YELLOW + f"Inventory: {inventory}" + Style.RESET_ALL)
         num_green_ml = inventory["num_green_ml"]
         num_green_potions = inventory["num_green_potions"]
         gold = inventory["gold"]
 
     plan = []
     if num_green_potions < 10:
+        print(Fore.YELLOW + f"Low on green potions" + Style.RESET_ALL)
         # Find the smallest green barrel in catalog
         for barrel in wholesale_catalog:
             if barrel.potion_type == [0, 1, 0, 0]:
