@@ -28,7 +28,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 
     for barrel in barrels_delivered:
         if barrel.potion_type == [0, 100, 0, 0]:
-            total_green_ml += barrel.ml_per_barrel * barrel.quantity
+            total_green_ml += barrel.ml_per_barrel
 
     if total_green_ml > 0:
         with db.engine.begin() as connection:
@@ -51,22 +51,22 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         num_green_ml = inventory["num_green_ml"]
         num_green_potions = inventory["num_green_potions"]
         gold = inventory["gold"]
-    
+
     plan = []
     if num_green_potions < 10:
         # Find the smallest green barrel in catalog
         for barrel in wholesale_catalog:
-            if barrel.potion_type == [0, 1, 0, 0]: 
+            if barrel.potion_type == [0, 1, 0, 0]:
                 if barrel.sku.startswith("SMALL"):
                     plan.append({
                         "sku": barrel.sku,
                         "quantity": 1
                     })
                     break
-        
+
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {gold} gold" + Style.RESET_ALL)
     print(Fore.GREEN + f"Wholesale catalog: {wholesale_catalog}" + Style.RESET_ALL)
-    
+
     return plan
 
