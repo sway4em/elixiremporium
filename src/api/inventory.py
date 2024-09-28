@@ -56,7 +56,7 @@ def get_capacity_plan():
     capacity unit costs 1000 gold.
     """
 
-    print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL
+    print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL)
     return {
         "potion_capacity": 0,
         "ml_capacity": 0
