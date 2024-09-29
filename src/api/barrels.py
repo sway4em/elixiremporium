@@ -27,7 +27,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(Fore.RED + f"Calling post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     total_green_ml = 0
-    print(Fore.yellow + f"Iterating through barrels_delivered" + Style.RESET_ALL)
+    print(Fore.YELLOW+ f"Iterating through barrels_delivered" + Style.RESET_ALL)
 
     for barrel in barrels_delivered:
         if barrel.potion_type == [0, 100, 0, 0]:
