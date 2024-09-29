@@ -30,7 +30,9 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(Fore.YELLOW+ f"Iterating through barrels_delivered" + Style.RESET_ALL)
 
     for barrel in barrels_delivered:
+        print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
         if barrel.potion_type == [0, 100, 0, 0]:
+            print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
             print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
             total_green_ml += barrel.ml_per_barrel
             print(Fore.YELLOW + f"Total green ml: {total_green_ml}" + Style.RESET_ALL)
@@ -72,6 +74,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 else:
                     if barrel.ml_per_barrel < smallest.ml_per_barrel:
                         smallest = barrel
+        plan.append({"sku": smallest.sku, "quantity": 1})
         print(Fore.YELLOW + f"Smallest green barrel: {smallest}" + Style.RESET_ALL)
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {gold} gold" + Style.RESET_ALL)

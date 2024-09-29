@@ -26,7 +26,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
     for potion in potions_delivered:
         total_potions += potion.quantity
-
+    
+    print(Fore.CYAN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
         print(Fore.CYAN + f"Updating global inventory" + Style.RESET_ALL)
         connection.execute(
