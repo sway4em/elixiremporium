@@ -1,16 +1,20 @@
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, HTTPException
 from pydantic import BaseModel
 from src.api import auth
 from enum import Enum
 from src import database as db
 from sqlalchemy import text
 from colorama import Fore, Style
+import requests
 
 router = APIRouter(
     prefix="/carts",
     tags=["cart"],
     dependencies=[Depends(auth.get_api_key)],
 )
+
+cart_id = 0
+cart_mapping = {}
 
 class search_sort_options(str, Enum):
     customer_name = "customer_name"
@@ -91,26 +95,85 @@ def post_visits(visit_id: int, customers: list[Customer]):
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
+    global cart_id
+    cart_id = cart_id + 1
+    cart_mapping[cart_id] = new_cart
     print(Fore.RED + "Calling / create cart endpoint")
-    return {"cart_id": 1}
+    print(Fore.YELLOW + f"new_cart: {new_cart}")
+    print(Fore.GREEN + f"cart_id: {cart_id}")
+    print(Style.RESET_ALL)
+
+    return {"cart_id": cart_id}
 
 
 class CartItem(BaseModel):
     quantity: int
 
-
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
+    print(Fore.RED + "Calling /{cart_id}/items/{item_sku} endpoint")
+    print(Fore.YELLOW + f"cart_id: {cart_id}")
+    print(Fore.YELLOW + f"item_sku: {item_sku}")
+    print(Fore.GREEN + f"cart_item: {cart_item}")
+    print(Style.RESET_ALL)
 
-    return "OK"
+    if cart_id not in cart_mapping:
+        return {"success": False}
 
+    cart = cart_mapping[cart_id]
+    if not hasattr(cart, 'items'):
+        cart.items = {}
+
+    cart.items[item_sku] = cart_item.quantity
+
+    return {"success": True}
 
 class CartCheckout(BaseModel):
     payment: str
 
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
-    """ """
+    """
+    Handles the checkout process for a specific cart.
+    """
+    print(Fore.RED + f"Calling /{cart_id}/checkout endpoint")
+    print(Fore.YELLOW + f"cart_id: {cart_id}")
+    print(Fore.GREEN + f"cart_checkout: {cart_checkout}")
+    print(Style.RESET_ALL)
 
-    return {"total_potions_bought": 1, "total_gold_paid": 50}
+    if cart_id not in cart_mapping:
+        raise HTTPException(status_code=404, detail="Cart not found")
+    cart = cart_mapping[cart_id]
+    if not hasattr(cart, 'items') or not cart.items:
+        raise HTTPException(status_code=400, detail="Cart is empty")
+
+    # Fetch the catalog
+    try:
+        catalog_response = requests.get("http://localhost:8501/catalog/")
+        catalog_response.raise_for_status()
+        catalog = catalog_response.json()
+    except requests.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Failed to fetch catalog: {str(e)}")
+
+    # Create a dictionary for quick lookup
+    catalog_dict = {item['sku']: item for item in catalog}
+    total_potions_bought = 0
+    total_gold_paid = 0
+
+    for item_sku, quantity in cart.items.items():
+        if item_sku in catalog_dict:
+            total_potions_bought += quantity
+            total_gold_paid += quantity * catalog_dict[item_sku]["price"]
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid item in cart: {item_sku}")
+
+    cart.items.clear()
+
+    print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold: {total_gold_paid}")
+    print(Style.RESET_ALL)
+
+    return {
+        "total_potions_bought": total_potions_bought,
+        "total_gold_paid": total_gold_paid
+    }
