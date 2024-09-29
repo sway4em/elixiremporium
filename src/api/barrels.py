@@ -64,15 +64,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     if num_green_potions < 10:
         print(Fore.YELLOW + f"Low on green potions" + Style.RESET_ALL)
         # Find the smallest green barrel in catalog
+        smallest = None
         for barrel in wholesale_catalog:
             if barrel.potion_type == [0, 1, 0, 0]:
-                if barrel.sku.startswith("SMALL"):
-                    plan.append({
-                        "sku": barrel.sku,
-                        "quantity": 1
-                    })
-                    break
-
+                if not smallest:
+                    smallest = barrel
+                else:
+                    if barrel.ml_per_barrel < smallest.ml_per_barrel:
+                        smallest = barrel
+        print(Fore.YELLOW + f"Smallest green barrel: {smallest}" + Style.RESET_ALL)
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {gold} gold" + Style.RESET_ALL)
     print(Fore.GREEN + f"Wholesale catalog: {wholesale_catalog}" + Style.RESET_ALL)
