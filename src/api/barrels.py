@@ -68,7 +68,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         # Find the smallest green barrel in catalog
         smallest = None
         for barrel in wholesale_catalog:
-            if barrel.potion_type == [0, 100, 0, 0]:
+            if barrel.potion_type == [0, 1, 0, 0]:
                 if not smallest:
                     smallest = barrel
                 else:
