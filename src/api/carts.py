@@ -97,7 +97,7 @@ def create_cart(new_cart: Customer):
     """ """
     global cart_id
     cart_id =str(int(cart_id) + 1)
-    cart_mapping[cart_id] = new_cart
+    cart_mapping[cart_id] = {"customer" : new_cart, "items": {}}
     print(Fore.RED + "Calling / create cart endpoint")
     print(Fore.YELLOW + f"new_cart: {new_cart}")
     print(Fore.GREEN + f"cart_id: {cart_id}")
@@ -125,7 +125,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     if not hasattr(cart, 'items'):
         cart.items = {}
 
-    cart.items[item_sku] = cart_item.quantity
+    cart["items"][item_sku] = cart_item.quantity
 
     return {"success": True}
 
@@ -141,7 +141,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(Fore.YELLOW + f"cart_id: {cart_id}")
     print(Fore.GREEN + f"cart_checkout: {cart_checkout}")
     print(Style.RESET_ALL)
-
+    cart_id = str(cart_id)
     if cart_id not in cart_mapping:
         raise HTTPException(status_code=404, detail="Cart not found")
     cart = cart_mapping[cart_id]
@@ -150,7 +150,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     # Fetch the catalog
     try:
-        catalog_response = requests.get("http://localhost:8501/catalog/")
+        print(Fore.BLUE + "Fetching catalog")
+        catalog_response = requests.get("http://0.0.0.0:8501/catalog/")
+        print(Fore.GREEN + f"Catalog response: {catalog_response}")
         catalog_response.raise_for_status()
         catalog = catalog_response.json()
     except requests.RequestException as e:
@@ -161,14 +163,18 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     total_potions_bought = 0
     total_gold_paid = 0
 
-    for item_sku, quantity in cart.items.items():
+    for item_sku, quantity in cart["items"].items():
         if item_sku in catalog_dict:
             total_potions_bought += quantity
             total_gold_paid += quantity * catalog_dict[item_sku]["price"]
         else:
             raise HTTPException(status_code=400, detail=f"Invalid item in cart: {item_sku}")
 
-    cart.items.clear()
+    with db.engine.begin() as connection:
+        connection.execute(text(f"UPDATE global_inventory SET num_green_potions = num_green_potions - {total_potions_bought}, gold = gold + {total_gold_paid}"))
+
+
+    cart["items"] = {}
 
     print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold: {total_gold_paid}")
     print(Style.RESET_ALL)
