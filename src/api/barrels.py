@@ -31,7 +31,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
 
     for barrel in barrels_delivered:
         print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
-        if barrel.potion_type == [0, 100, 0, 0]:
+        if barrel.potion_type == [0, 1, 0, 0]:
             print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
             print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
             total_green_ml += barrel.ml_per_barrel
