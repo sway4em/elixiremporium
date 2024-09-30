@@ -46,6 +46,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             )
 
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
+    print(Fore.MAGENTA + f"API called: post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_green_ml_delivered: {total_green_ml}]" + Style.RESET_ALL)
     return {"status": "success", "total_green_ml_delivered": total_green_ml}
 
 # Gets called once a day
@@ -80,6 +81,6 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {gold} gold" + Style.RESET_ALL)
     print(Fore.GREEN + f"Wholesale catalog: {wholesale_catalog}" + Style.RESET_ALL)
-
+    print(Fore.MAGENTA + f"API called: get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}, \nresponse: {plan}" + Style.RESET_ALL)
     return plan
 

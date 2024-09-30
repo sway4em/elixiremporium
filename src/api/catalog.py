@@ -35,4 +35,5 @@ def get_catalog():
             catalog = []
 
     print(Fore.GREEN + f"Catalog retrieved: {catalog}" + Style.RESET_ALL)
+    print(Fore.MAGENTA + f"API called: /catalog/ | response: {catalog}" + Style.RESET_ALL)
     return catalog

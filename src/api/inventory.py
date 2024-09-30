@@ -12,12 +12,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-# from fastapi import APIRouter
-# import sqlalchemy
-# from src import database as db
-
-# router = APIRouter()
-
 @router.get("/audit")
 def get_inventory():
     """
@@ -37,6 +31,7 @@ def get_inventory():
                 print(Fore.GREEN + f"Number of potions: {row['num_green_potions']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of ml: {row['num_green_ml']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Gold: {row['gold']}" + Style.RESET_ALL)
+                print(Fore.MAGENTA + f"API called: /audit | response: {row}" + Style.RESET_ALL)
                 return {
                     "number_of_potions": row['num_green_potions'],
                     "ml_in_barrels": row['num_green_ml'],
@@ -57,6 +52,7 @@ def get_capacity_plan():
     """
 
     print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL)
+    print(Fore.MAGENTA + f"API called: /plan | response: [potion_capacity: 0, ml_capacity: 0]" + Style.RESET_ALL)
     return {
         "potion_capacity": 0,
         "ml_capacity": 0
@@ -73,5 +69,5 @@ def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
     Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional
     capacity unit costs 1000 gold.
     """
-
+    print(Fore.MAGENTA + f"API called: /deliver/{order_id} with capacity_purchase: {capacity_purchase} | Order ID: {order_id}, \nresponse: [OK]" + Style.RESET_ALL)
     return "OK"

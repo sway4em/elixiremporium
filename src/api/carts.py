@@ -13,6 +13,7 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+# global vars for cart
 cart_id = "0"
 cart_mapping = {}
 
@@ -26,6 +27,7 @@ class search_sort_order(str, Enum):
     asc = "asc"
     desc = "desc"
 
+# implement later
 @router.get("/search/", tags=["search"])
 def search_orders(
     customer_name: str = "",
@@ -92,23 +94,29 @@ def post_visits(visit_id: int, customers: list[Customer]):
     return "OK"
 
 
+# creates a new cart and returns the cart_id
 @router.post("/")
 def create_cart(new_cart: Customer):
     """ """
     global cart_id
+
+    # cart id needs to be a string
     cart_id =str(int(cart_id) + 1)
     cart_mapping[cart_id] = {"customer" : new_cart, "items": {}}
+
     print(Fore.RED + "Calling / create cart endpoint")
     print(Fore.YELLOW + f"new_cart: {new_cart}")
     print(Fore.GREEN + f"cart_id: {cart_id}")
     print(Style.RESET_ALL)
 
+    print(Fore.MAGENTA + f"API called: / with new_cart: {new_cart} | response: [cart_id: {cart_id}]" + Style.RESET_ALL)
     return {"cart_id": cart_id}
 
 
 class CartItem(BaseModel):
     quantity: int
 
+# add item to cart (update to use CartItem later)
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """ """
@@ -117,21 +125,23 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     print(Fore.YELLOW + f"item_sku: {item_sku}")
     print(Fore.GREEN + f"cart_item: {cart_item}")
     print(Style.RESET_ALL)
+
     cart_id = str(cart_id)
     if cart_id not in cart_mapping:
         return {"success": False}
 
     cart = cart_mapping[cart_id]
     if not hasattr(cart, 'items'):
-        cart.items = {}
+        cart["items"] = {}
 
     cart["items"][item_sku] = cart_item.quantity
-
+    print(Fore.MAGENTA + f"API called: /{cart_id}/items/{item_sku} with cart_item: {cart_item} | response: [success: True]" + Style.RESET_ALL)
     return {"success": True}
 
 class CartCheckout(BaseModel):
     payment: str
 
+# checkout cart update to use CartCheckout later
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     """
@@ -141,6 +151,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(Fore.YELLOW + f"cart_id: {cart_id}")
     print(Fore.GREEN + f"cart_checkout: {cart_checkout}")
     print(Style.RESET_ALL)
+
     cart_id = str(cart_id)
     if cart_id not in cart_mapping:
         raise HTTPException(status_code=404, detail="Cart not found")
@@ -148,9 +159,9 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     if not hasattr(cart, 'items') or not cart.items:
         raise HTTPException(status_code=400, detail="Cart is empty")
 
-    # Fetch the catalog
     try:
         print(Fore.BLUE + "Fetching catalog")
+        # ugly fix later
         catalog_response = requests.get("http://0.0.0.0:8501/catalog/")
         print(Fore.GREEN + f"Catalog response: {catalog_response}")
         catalog_response.raise_for_status()
@@ -158,11 +169,12 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     except requests.RequestException as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch catalog: {str(e)}")
 
-    # Create a dictionary for quick lookup
+    # dict for quck lookup
     catalog_dict = {item['sku']: item for item in catalog}
     total_potions_bought = 0
     total_gold_paid = 0
 
+    # ugly fix later
     for item_sku, quantity in cart["items"].items():
         if item_sku in catalog_dict:
             total_potions_bought += quantity
@@ -170,13 +182,15 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         else:
             raise HTTPException(status_code=400, detail=f"Invalid item in cart: {item_sku}")
 
+    # ugly fix later
     with db.engine.begin() as connection:
         connection.execute(text(f"UPDATE global_inventory SET num_green_potions = num_green_potions - {total_potions_bought}, gold = gold + {total_gold_paid}"))
 
-
+    # reset cart (not sure if this updates the global cart)
     cart["items"] = {}
 
     print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold: {total_gold_paid}")
+    print(Fore.MAGENTA + f"API called: /{cart_id}/checkout with cart_checkout: {cart_checkout} | response: [total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}]" + Style.RESET_ALL)
     print(Style.RESET_ALL)
 
     return {

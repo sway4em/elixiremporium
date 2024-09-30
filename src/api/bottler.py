@@ -37,6 +37,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
 
     print(Fore.GREEN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
+    print(Fore.MAGENTA + f"API called: /bottler/deliver/{order_id} with potions_delivered: {potions_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_potions_delivered: {total_potions}]" + Style.RESET_ALL)
     return {"status": "success", "total_potions_delivered": total_potions}
 
 @router.post("/plan")
@@ -67,13 +68,16 @@ def get_bottle_plan():
     print(Fore.CYAN + f"Potions to bottle: {potions_to_bottle}" + Style.RESET_ALL)
 
     if potions_to_bottle == 0:
+        print(Fore.MAGENTA + f"API called: /bottler/plan with response: []" + Style.RESET_ALL)
         return []
-    return [
-        {
-            "potion_type": [0, 100, 0, 0],
-            "quantity": potions_to_bottle,
-        }
-    ]
+    else:
+        print(Fore.MAGENTA + f"API called: /bottler/plan with response: [{potions_to_bottle} green potions]" + Style.RESET_ALL)
+        return [
+            {
+                "potion_type": [0, 100, 0, 0],
+                "quantity": potions_to_bottle,
+            }
+        ]
 
 if __name__ == "__main__":
     print(get_bottle_plan())
