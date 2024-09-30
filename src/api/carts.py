@@ -117,7 +117,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     print(Fore.YELLOW + f"item_sku: {item_sku}")
     print(Fore.GREEN + f"cart_item: {cart_item}")
     print(Style.RESET_ALL)
-
+    cart_id = str(cart_id)
     if cart_id not in cart_mapping:
         return {"success": False}
 
