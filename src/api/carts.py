@@ -13,7 +13,7 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-cart_id = 0
+cart_id = "0"
 cart_mapping = {}
 
 class search_sort_options(str, Enum):
@@ -96,7 +96,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
 def create_cart(new_cart: Customer):
     """ """
     global cart_id
-    cart_id = cart_id + 1
+    cart_id =str(int(cart_id) + 1)
     cart_mapping[cart_id] = new_cart
     print(Fore.RED + "Calling / create cart endpoint")
     print(Fore.YELLOW + f"new_cart: {new_cart}")
