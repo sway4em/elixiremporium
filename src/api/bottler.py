@@ -26,7 +26,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
     for potion in potions_delivered:
         total_potions += potion.quantity
-    
+
     print(Fore.CYAN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
         print(Fore.CYAN + f"Updating global inventory" + Style.RESET_ALL)
@@ -66,6 +66,8 @@ def get_bottle_plan():
     print(Fore.CYAN + f"Inventory retrieved: {num_green_ml} ml" + Style.RESET_ALL)
     print(Fore.CYAN + f"Potions to bottle: {potions_to_bottle}" + Style.RESET_ALL)
 
+    if potions_to_bottle == 0:
+        return []
     return [
         {
             "potion_type": [0, 100, 0, 0],
