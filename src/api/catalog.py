@@ -21,7 +21,6 @@ def get_catalog():
         inventory = result.fetchone()
         print(Fore.GREEN + f"Inventory retrieved: {inventory}" + Style.RESET_ALL)
         num_green_potions = inventory['num_green_potions']
-
         catalog = [
             {
                 "sku": "green_potion_001",
@@ -31,6 +30,9 @@ def get_catalog():
                 "potion_type": [0, 100, 0, 0]
             }
         ]
+        if num_green_potions == 0:
+            print(Fore.RED + f"Inventory is empty" + Style.RESET_ALL)
+            catalog = []
 
     print(Fore.GREEN + f"Catalog retrieved: {catalog}" + Style.RESET_ALL)
     return catalog
