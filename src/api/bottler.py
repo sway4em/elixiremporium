@@ -24,6 +24,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     print(Fore.GREEN + f"Delivering potions for order ID: {order_id}" + Style.RESET_ALL)
     total_potions = 0
 
+    # ignore potion type for now
     for potion in potions_delivered:
         total_potions += potion.quantity
 
@@ -74,7 +75,7 @@ def get_bottle_plan():
         print(Fore.MAGENTA + f"API called: /bottler/plan with response: [{potions_to_bottle} green potions]" + Style.RESET_ALL)
         return [
             {
-                "potion_type": [0, 100, 0, 0],
+                "potion_type": [0, 100, 0, 0], # only green potions for now
                 "quantity": potions_to_bottle,
             }
         ]

@@ -27,6 +27,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(Fore.RED + f"Calling post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     total_green_ml = 0
+    gold_spent = 0
     print(Fore.YELLOW+ f"Iterating through barrels_delivered" + Style.RESET_ALL)
 
     for barrel in barrels_delivered:
@@ -34,20 +35,21 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         if barrel.potion_type == [0, 1, 0, 0]:
             print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
             print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
-            total_green_ml += barrel.ml_per_barrel
+            total_green_ml += barrel.ml_per_barrel * barrel.quantity
+            gold_spent += barrel.price * barrel.quantity
             print(Fore.YELLOW + f"Total green ml: {total_green_ml}" + Style.RESET_ALL)
 
-    if total_green_ml > 0:
-        print(Fore.YELLOW + f"Updating global_inventory with total_green_ml: {total_green_ml}" + Style.RESET_ALL)
+    if total_green_ml > 0 or gold_spent > 0:
+        print(Fore.YELLOW + f"Updating global_inventory with total_green_ml: {total_green_ml} and gold_spent: {gold_spent}" + Style.RESET_ALL)
         with db.engine.begin() as connection:
             connection.execute(
-                text("UPDATE global_inventory SET num_green_ml = num_green_ml + :total_green_ml"),
-                {"total_green_ml": total_green_ml}
+                text("UPDATE global_inventory SET num_green_ml = num_green_ml + :total_green_ml, gold = gold - :gold_spent"),
+                {"total_green_ml": total_green_ml, "gold_spent": gold_spent}
             )
 
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
-    print(Fore.MAGENTA + f"API called: post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_green_ml_delivered: {total_green_ml}]" + Style.RESET_ALL)
-    return {"status": "success", "total_green_ml_delivered": total_green_ml}
+    print(Fore.MAGENTA + f"API called: post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_green_ml_delivered: {total_green_ml}, gold_spent: {gold_spent}]" + Style.RESET_ALL)
+    return {"status": "success", "total_green_ml_delivered": total_green_ml, "gold_spent": gold_spent}
 
 # Gets called once a day
 @router.post("/plan")
