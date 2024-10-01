@@ -40,7 +40,8 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
     print(Fore.GREEN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
     print(Fore.MAGENTA + f"API called: /bottler/deliver/{order_id} with potions_delivered: {potions_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_potions_delivered: {total_potions}]" + Style.RESET_ALL)
-    return {"status": "success", "total_potions_delivered": total_potions}
+
+    return "OK"
 
 @router.post("/plan")
 def get_bottle_plan():
