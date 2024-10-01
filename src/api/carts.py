@@ -189,7 +189,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     # reset cart (not sure if this updates the global cart)
     cart["items"] = {}
 
-    print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold: {total_gold_paid}")
+    print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold paid: {total_gold_paid}")
     print(Fore.MAGENTA + f"API called: /{cart_id}/checkout with cart_checkout: {cart_checkout} | response: [total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}]" + Style.RESET_ALL)
     print(Style.RESET_ALL)
 
