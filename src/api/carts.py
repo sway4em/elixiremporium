@@ -162,7 +162,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     try:
         print(Fore.BLUE + "Fetching catalog")
         # ugly fix later
-        catalog_response = requests.get("http://0.0.0.0:8501/catalog/")
+        catalog_response = requests.get("https://polypotionpeddlers.onrender.com/catalog/")
         print(Fore.GREEN + f"Catalog response: {catalog_response}")
         catalog_response.raise_for_status()
         catalog = catalog_response.json()
