@@ -57,28 +57,55 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(Fore.RED + f"Calling get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
-        result = connection.execute(text("SELECT num_green_ml, num_green_potions, gold FROM global_inventory")).mappings()
+        result = connection.execute(text("SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold FROM global_inventory"))
         inventory = result.fetchone()
         print(Fore.YELLOW + f"Fetching inventory: {inventory}" + Style.RESET_ALL)
         print(Fore.YELLOW + f"Inventory: {inventory}" + Style.RESET_ALL)
         num_green_ml = inventory["num_green_ml"]
         num_green_potions = inventory["num_green_potions"]
+        num_red_ml = inventory["num_red_ml"]
+        num_red_potions = inventory["num_red_potions"]
+        num_blue_ml = inventory["num_blue_ml"]
+        num_blue_potions = inventory["num_blue_potions"]
         gold = inventory["gold"]
 
     plan = []
-    # Find the largest green barrel in catalog that we can afford
-    largest_affordable = None
-    for barrel in wholesale_catalog:
-        if barrel.potion_type == [0, 1, 0, 0] and barrel.price <= gold:
-            if not largest_affordable or barrel.ml_per_barrel > largest_affordable.ml_per_barrel:
-                largest_affordable = barrel
-
-    if largest_affordable:
-        qty = gold // largest_affordable.price
-        plan.append({"sku": largest_affordable.sku, "quantity": qty})
-        print(Fore.YELLOW + f"Largest affordable green barrel: {largest_affordable}" + Style.RESET_ALL)
-    else:
-        print(Fore.YELLOW + f"No affordable green barrels found" + Style.RESET_ALL)
+    if num_blue_potions < 10:
+        print(Fore.YELLOW + f"Low on blue potions" + Style.RESET_ALL)
+        # Find the smallest blue barrel in catalog
+        smallest = None
+        for barrel in wholesale_catalog:
+            if barrel.potion_type == [0, 0, 1, 0]:
+                if not smallest:
+                    smallest = barrel
+                else:
+                    if barrel.ml_per_barrel < smallest.ml_per_barrel:
+                        smallest = barrel
+        if smallest:
+            if gold >= smallest.price:
+                qty = gold // smallest.price
+                plan.append({"sku": smallest.sku, "quantity": qty})
+            else:
+                print(Fore.YELLOW + f"Not enough gold to purchase smallest blue barrel" + Style.RESET_ALL)
+        print(Fore.YELLOW + f"Smallest blue barrel: {smallest}" + Style.RESET_ALL)
+    elif num_green_potions < 10:
+        print(Fore.YELLOW + f"Low on green potions" + Style.RESET_ALL)
+        # Find the smallest green barrel in catalog
+        smallest = None
+        for barrel in wholesale_catalog:
+            if barrel.potion_type == [0, 1, 0, 0]:
+                if not smallest:
+                    smallest = barrel
+                else:
+                    if barrel.ml_per_barrel < smallest.ml_per_barrel:
+                        smallest = barrel
+        if smallest:
+            if gold >= smallest.price:
+                qty = gold // smallest.price
+                plan.append({"sku": smallest.sku, "quantity": qty})
+            else:
+                print(Fore.YELLOW + f"Not enough gold to purchase smallest green barrel" + Style.RESET_ALL)
+        print(Fore.YELLOW + f"Smallest green barrel: {smallest}" + Style.RESET_ALL)
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {gold} gold" + Style.RESET_ALL)
     print(Fore.GREEN + f"Wholesale catalog: {wholesale_catalog}" + Style.RESET_ALL)
