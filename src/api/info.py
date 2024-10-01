@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request
 from pydantic import BaseModel
 from src.api import auth
+from colorama import Fore, Style
 
 router = APIRouter(
     prefix="/info",
@@ -17,5 +18,6 @@ def post_time(timestamp: Timestamp):
     """
     Share current time.
     """
+    print(Fore.GREEN + f"Day: {timestamp.day}, Hour: {timestamp.hour}" + Style.RESET_ALL)
     return "OK"
 
