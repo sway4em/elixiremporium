@@ -27,6 +27,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(Fore.RED + f"Calling post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
     total_green_ml = 0
+    total_red_ml = 0
+    total_blue_ml = 0
     gold_spent = 0
     print(Fore.YELLOW+ f"Iterating through barrels_delivered" + Style.RESET_ALL)
 
@@ -34,22 +36,29 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
         if barrel.potion_type == [0, 1, 0, 0]:
             print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
-            print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
             total_green_ml += barrel.ml_per_barrel * barrel.quantity
-            gold_spent += barrel.price * barrel.quantity
             print(Fore.YELLOW + f"Total green ml: {total_green_ml}" + Style.RESET_ALL)
+        elif barrel.potion_type == [1, 0, 0, 0]:
+            print(Fore.YELLOW + f"Red barrel delivered" + Style.RESET_ALL)
+            total_red_ml += barrel.ml_per_barrel * barrel.quantity
+            print(Fore.YELLOW + f"Total red ml: {total_red_ml}" + Style.RESET_ALL)
+        elif barrel.potion_type == [0, 0, 1, 0]:
+            print(Fore.YELLOW + f"Blue barrel delivered" + Style.RESET_ALL)
+            total_blue_ml += barrel.ml_per_barrel * barrel.quantity
+            print(Fore.YELLOW + f"Total blue ml: {total_blue_ml}" + Style.RESET_ALL)
+        gold_spent += barrel.price * barrel.quantity
 
-    if total_green_ml > 0 or gold_spent > 0:
-        print(Fore.YELLOW + f"Updating global_inventory with total_green_ml: {total_green_ml} and gold_spent: {gold_spent}" + Style.RESET_ALL)
+    if total_green_ml > 0 or total_red_ml > 0 or total_blue_ml > 0 or gold_spent > 0:
+        print(Fore.YELLOW + f"Updating global_inventory with total_green_ml: {total_green_ml}, total_red_ml: {total_red_ml}, total_blue_ml: {total_blue_ml} and gold_spent: {gold_spent}" + Style.RESET_ALL)
         with db.engine.begin() as connection:
             connection.execute(
-                text("UPDATE global_inventory SET num_green_ml = num_green_ml + :total_green_ml, gold = gold - :gold_spent"),
-                {"total_green_ml": total_green_ml, "gold_spent": gold_spent}
+                text("UPDATE global_inventory SET num_green_ml = num_green_ml + :total_green_ml, num_red_ml = num_red_ml + :total_red_ml, num_blue_ml = num_blue_ml + :total_blue_ml, gold = gold - :gold_spent"),
+                {"total_green_ml": total_green_ml, "total_red_ml": total_red_ml, "total_blue_ml": total_blue_ml, "gold_spent": gold_spent}
             )
 
     print(Fore.RED + f"Barrels delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
-    print(Fore.MAGENTA + f"API called: post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_green_ml_delivered: {total_green_ml}, gold_spent: {gold_spent}]" + Style.RESET_ALL)
-    return {"status": "success", "total_green_ml_delivered": total_green_ml, "gold_spent": gold_spent}
+    print(Fore.MAGENTA + f"API called: post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}, \nresponse: [status: success, total_green_ml_delivered: {total_green_ml}, total_red_ml_delivered: {total_red_ml}, total_blue_ml_delivered: {total_blue_ml}, gold_spent: {gold_spent}]" + Style.RESET_ALL)
+    return {"status": "success", "total_green_ml_delivered": total_green_ml, "total_red_ml_delivered": total_red_ml, "total_blue_ml_delivered": total_blue_ml, "gold_spent": gold_spent}
 
 # Gets called once a day
 @router.post("/plan")
