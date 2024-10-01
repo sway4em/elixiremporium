@@ -110,7 +110,7 @@ def create_cart(new_cart: Customer):
     print(Style.RESET_ALL)
 
     print(Fore.MAGENTA + f"API called: / with new_cart: {new_cart} | response: [cart_id: {cart_id}]" + Style.RESET_ALL)
-    return {"cart_id": cart_id}
+    return {"cart_id": int(cart_id)}
 
 
 class CartItem(BaseModel):
