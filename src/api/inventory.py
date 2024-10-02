@@ -31,7 +31,7 @@ def get_inventory():
                 print(Fore.GREEN + f"Number of red potions: {row['num_red_potions']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of green potions: {row['num_green_potions']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of blue potions: {row['num_blue_potions']}" + Style.RESET_ALL)
-                print(Fore.GRREN + f"Total number of potions: {row['num_red_potions'] + row['num_green_potions'] + row['num_blue_potions']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Total number of potions: {row['num_red_potions'] + row['num_green_potions'] + row['num_blue_potions']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of red ml: {row['num_red_ml']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of green ml: {row['num_green_ml']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Number of blue ml: {row['num_blue_ml']}" + Style.RESET_ALL)

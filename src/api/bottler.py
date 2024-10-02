@@ -23,18 +23,30 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
     print(Fore.RED + f"Calling /bottler/deliver/{order_id}" + Style.RESET_ALL)
     print(Fore.GREEN + f"Delivering potions for order ID: {order_id}" + Style.RESET_ALL)
     total_potions = 0
+    num_green_potions = 0
+    num_red_potions = 0
+    num_blue_potions = 0
 
     # ignore potion type for now
     for potion in potions_delivered:
         total_potions += potion.quantity
+        if potion.potion_type[1] == 100:
+            num_green_potions += potion.quantity
+        elif potion.potion_type[0] == 100:
+            num_red_potions += potion.quantity
+        elif potion.potion_type[2] == 100:
+            num_blue_potions += potion.quantity
 
+    print(Fore.CYAN + f"Total red potions delivered: {num_red_potions}" + Style.RESET_ALL)
+    print(Fore.CYAN + f"Total blue potions delivered: {num_blue_potions}" + Style.RESET_ALL)
+    print(Fore.CYAN + f"Total green potions delivered: {num_green_potions}" + Style.RESET_ALL)
     print(Fore.CYAN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
         print(Fore.CYAN + f"Updating global inventory" + Style.RESET_ALL)
 
         connection.execute(
-            text("UPDATE global_inventory SET num_green_potions = num_green_potions + :total_potions, num_green_ml = num_green_ml - :total_potions * 100"),
-            {"total_potions": total_potions}
+            text("UPDATE global_inventory SET num_red_potions = num_red_potions + :num_red_potions, num_green_potions = num_green_potions + :num_green_potions, num_blue_potions = num_blue_potions + :num_blue_potions, num_green_ml = num_green_ml - :num_green_potions * 100, num_red_ml = num_red_ml - :num_red_potions * 100, num_blue_ml = num_blue_ml - :num_blue_potions * 100"),
+            {"num_blue_potions" : num_blue_potions, "num_red_potions" : num_red_potions, "num_green_potions" : num_green_potions, "total_potions" : total_potions}
         )
 
 
@@ -66,7 +78,7 @@ def get_bottle_plan():
         num_blue_ml = inventory["num_blue_ml"]
 
     potions_to_bottle = []
-    
+
     # Red potions
     red_potions = num_red_ml // 100
     if red_potions > 0:
@@ -74,7 +86,7 @@ def get_bottle_plan():
             "potion_type": [100, 0, 0, 0],
             "quantity": red_potions
         })
-    
+
     # Green potions
     green_potions = num_green_ml // 100
     if green_potions > 0:
@@ -82,7 +94,7 @@ def get_bottle_plan():
             "potion_type": [0, 100, 0, 0],
             "quantity": green_potions
         })
-    
+
     # Blue potions
     blue_potions = num_blue_ml // 100
     if blue_potions > 0:
