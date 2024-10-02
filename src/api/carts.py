@@ -91,6 +91,11 @@ def post_visits(visit_id: int, customers: list[Customer]):
     print(Fore.GREEN + f"customers: {customers}")
     print(Style.RESET_ALL)
 
+    # add to the customers table
+    with db.engine.begin() as connection:
+        for customer in customers:
+            connection.execute(text(f"INSERT INTO customers (customer_name, character_class, level) VALUES ('{customer.customer_name}', '{customer.character_class}', {customer.level})"))
+
     return "OK"
 
 
