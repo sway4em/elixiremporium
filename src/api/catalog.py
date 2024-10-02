@@ -24,13 +24,13 @@ def get_catalog():
         num_green_potions = inventory['num_green_potions']
         num_blue_potions = inventory['num_blue_potions']
         catalog = []
-        
+
         if num_red_potions > 0:
             catalog.append({
                 "sku": "red_potion_001",
                 "name": "Red Potion",
                 "quantity": num_red_potions,
-                "price": 100,
+                "price": 70,
                 "potion_type": [100, 0, 0, 0]
             })
         if num_green_potions > 0:
@@ -38,7 +38,7 @@ def get_catalog():
                 "sku": "green_potion_001",
                 "name": "Green Potion",
                 "quantity": num_green_potions,
-                "price": 150,
+                "price": 50,
                 "potion_type": [0, 100, 0, 0]
             })
 
@@ -47,10 +47,10 @@ def get_catalog():
                 "sku": "blue_potion_001",
                 "name": "Blue Potion",
                 "quantity": num_blue_potions,
-                "price": 200,
+                "price": 100,
                 "potion_type": [0, 0, 100, 0]
             })
-        
+
         if not catalog:
             print(Fore.RED + f"Inventory is empty" + Style.RESET_ALL)
     print(Fore.GREEN + f"Catalog retrieved: {catalog}" + Style.RESET_ALL)
