@@ -5,6 +5,7 @@ import sqlalchemy
 from src import database as db
 from sqlalchemy import text
 from colorama import Fore, Style
+import random
 
 router = APIRouter(
     prefix="/barrels",
@@ -66,7 +67,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     Generate a wholesale purchase plan to maximize potion production and profit.
     """
     print(Fore.RED + f"Calling get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}" + Style.RESET_ALL)
-    
+
     with db.engine.begin() as connection:
         result = connection.execute(text(
             "SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold FROM global_inventory"
@@ -75,7 +76,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         if not inventory:
             raise HTTPException(status_code=500, detail="Inventory not found.")
         print(Fore.YELLOW + f"Fetching inventory: {inventory}" + Style.RESET_ALL)
-        
+
         num_green_ml = inventory["num_green_ml"]
         num_green_potions = inventory["num_green_potions"]
         num_red_ml = inventory["num_red_ml"]
@@ -83,7 +84,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         num_blue_ml = inventory["num_blue_ml"]
         num_blue_potions = inventory["num_blue_potions"]
         gold = inventory["gold"]
-    
+
     potion_ml_required = 100  # ml per potion
     desired_potions = {
         "green": max(10 - num_green_potions, 0),
@@ -98,7 +99,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     }
 
     print(Fore.YELLOW + f"Additional ML needed: {additional_ml_needed}" + Style.RESET_ALL)
-    
+
     # sort by cost effectiveness
     sorted_catalog = {
         "green": sorted(
@@ -116,7 +117,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     }
 
     print(Fore.YELLOW + f"Sorted Catalog by Cost-Effectiveness: {sorted_catalog}" + Style.RESET_ALL)
-    
+
     plan = []
     total_gold_spent = 0
 
@@ -132,7 +133,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             max_purchase_qty = min(max_affordable_qty, barrel.quantity)
             if max_purchase_qty <= 0:
                 continue
-            
+
             barrels_needed = (ml_needed + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel
             purchase_qty = min(max_purchase_qty, barrels_needed)
             if purchase_qty <= 0:
@@ -144,8 +145,11 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             total_gold_spent += barrel.price * purchase_qty
             ml_needed -= barrel.ml_per_barrel * purchase_qty
             print(Fore.CYAN + f"Purchased {purchase_qty} x {barrel.sku} for {barrel.price * purchase_qty} gold" + Style.RESET_ALL)
-    
-    for potion in ["red", "green", "blue"]:
+
+    # shuffle priority
+    potions = ["red", "green", "blue"]
+    random.shuffle(potions)
+    for potion in potions:
         purchase_barrels(potion, additional_ml_needed[potion])
 
     print(Fore.RED + f"Wholesale purchase plan: {plan}" + Style.RESET_ALL)
@@ -153,9 +157,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(Fore.YELLOW + f"Current inventory: {num_green_ml} ml, {num_green_potions} potions, {num_red_ml} ml, {num_red_potions} potions, {num_blue_ml} ml, {num_blue_potions} potions, {gold} gold" + Style.RESET_ALL)
     print(Fore.GREEN + f"Wholesale catalog: {wholesale_catalog}" + Style.RESET_ALL)
     print(Fore.MAGENTA + f"API called: get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}, \nresponse: {plan}" + Style.RESET_ALL)
-    
+
     if plan:
-        return plan  
+        return plan
     else:
         print(Fore.YELLOW + "No purchases made. Plan is empty." + Style.RESET_ALL)
 
