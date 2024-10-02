@@ -66,7 +66,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     """ """
     print(Fore.RED + f"Calling get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}" + Style.RESET_ALL)
     with db.engine.begin() as connection:
-        result = connection.execute(text("SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold FROM global_inventory"))
+        result = connection.execute(text("SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold FROM global_inventory")).mappings()
         inventory = result.fetchone()
         print(Fore.YELLOW + f"Fetching inventory: {inventory}" + Style.RESET_ALL)
         print(Fore.YELLOW + f"Inventory: {inventory}" + Style.RESET_ALL)
