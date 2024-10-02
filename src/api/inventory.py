@@ -19,7 +19,7 @@ def get_inventory():
     """
     print(Fore.GREEN + "Calling get_inventory()" + Style.RESET_ALL)
     sql_to_execute = """
-    SELECT num_green_potions, num_green_ml, gold FROM global_inventory
+    SELECT num_red_potions, num_red_ml, num_blue_potions, num_blue_ml, num_green_potions, num_green_ml, gold FROM global_inventory
     """
     try:
         with db.engine.connect() as connection:
@@ -28,13 +28,18 @@ def get_inventory():
 
             if row:
                 print(Fore.GREEN + "Inventory data found" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of potions: {row['num_green_potions']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of ml: {row['num_green_ml']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of red potions: {row['num_red_potions']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of green potions: {row['num_green_potions']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of blue potions: {row['num_blue_potions']}" + Style.RESET_ALL)
+                print(Fore.GRREN + f"Total number of potions: {row['num_red_potions'] + row['num_green_potions'] + row['num_blue_potions']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of red ml: {row['num_red_ml']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of green ml: {row['num_green_ml']}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Number of blue ml: {row['num_blue_ml']}" + Style.RESET_ALL)
                 print(Fore.GREEN + f"Gold: {row['gold']}" + Style.RESET_ALL)
                 print(Fore.MAGENTA + f"API called: /audit | response: {row}" + Style.RESET_ALL)
                 return {
-                    "number_of_potions": row['num_green_potions'],
-                    "ml_in_barrels": row['num_green_ml'],
+                    "number_of_potions": sum([row['num_red_potions'], row['num_green_potions'], row['num_blue_potions']]),
+                    "ml_in_barrels": sum([row['num_red_ml'], row['num_green_ml'], row['num_blue_ml']]),
                     "gold": row['gold']
                 }
             else:
