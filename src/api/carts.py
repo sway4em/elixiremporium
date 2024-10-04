@@ -176,20 +176,30 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
     # dict for quck lookup
     catalog_dict = {item['sku']: item for item in catalog}
+    print(Fore.BLUE + f"Catalog dict: {catalog_dict}")
     total_potions_bought = 0
     total_gold_paid = 0
-
+    green_potions = 0
+    red_potions = 0
+    blue_potions = 0
     # ugly fix later
     for item_sku, quantity in cart["items"].items():
+        print(Fore.BLUE + f"Processing item: {item_sku}, quantity: {quantity}")
         if item_sku in catalog_dict:
             total_potions_bought += quantity
+            if "green" in catalog_dict[item_sku]["name"].lower():
+                green_potions += quantity
+            elif "red" in catalog_dict[item_sku]["name"].lower():
+                red_potions += quantity
+            elif "blue" in catalog_dict[item_sku]["name"].lower():
+                blue_potions += quantity
             total_gold_paid += quantity * catalog_dict[item_sku]["price"]
         else:
             raise HTTPException(status_code=400, detail=f"Invalid item in cart: {item_sku}")
 
     # ugly fix later
     with db.engine.begin() as connection:
-        connection.execute(text(f"UPDATE global_inventory SET num_green_potions = num_green_potions - {total_potions_bought}, gold = gold + {total_gold_paid}"))
+        connection.execute(text(f"UPDATE global_inventory SET num_red_potions = num_red_potions - {red_potions}, num_green_potions = num_green_potions - {green_potions}, num_blue_potions = num_blue_potions - {blue_potions}, gold = gold + {total_gold_paid}"))
 
     # reset cart (not sure if this updates the global cart)
     cart["items"] = {}
