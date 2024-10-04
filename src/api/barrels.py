@@ -119,6 +119,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(Fore.YELLOW + f"Sorted Catalog by Cost-Effectiveness: {sorted_catalog}" + Style.RESET_ALL)
 
     plan = []
+    plan = [{
+        "sku" : "dark_potion_001",
+        "quantity" : 1
+    }]
     total_gold_spent = 0
 
     def purchase_barrels(potion_type: str, ml_needed: int):

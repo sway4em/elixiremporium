@@ -27,3 +27,11 @@ def post_time(timestamp: Timestamp):
         connection.commit()
     print(Fore.GREEN + f"Day: {timestamp.day}, Hour: {timestamp.hour}" + Style.RESET_ALL)
     return "OK"
+
+@router.get("/current_time")
+def get_current_time():
+    with db.engine.connect() as connection:
+        query = text("SELECT * FROM time ORDER BY id DESC LIMIT 1")
+        result = connection.execute(query).mappings().fetchone()
+    print(Fore.GREEN + f"Day: {result['day']}, Hour: {result['hour']}" + Style.RESET_ALL)
+    return {"day": result['day'], "hour": result['hour']}
