@@ -24,13 +24,6 @@ def get_catalog():
         num_green_potions = inventory['num_green_potions']
         num_blue_potions = inventory['num_blue_potions']
         catalog = []
-        catalog = [{
-            "sku" : "dark_potion_001",
-            "name" : "Dark Potion",
-            "quantity" : 10,
-            "price" : 10,
-            "potion_type" : [0, 0, 0, 100]
-        }]
 
         if num_red_potions > 0:
             catalog.append({
@@ -45,7 +38,7 @@ def get_catalog():
                 "sku": "green_potion_001",
                 "name": "Green Potion",
                 "quantity": num_green_potions,
-                "price": 65,
+                "price": 55,
                 "potion_type": [0, 100, 0, 0]
             })
 
