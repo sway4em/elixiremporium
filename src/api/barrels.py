@@ -6,6 +6,7 @@ from src import database as db
 from sqlalchemy import text
 from colorama import Fore, Style
 import random
+import time
 
 router = APIRouter(
     prefix="/barrels",
@@ -148,7 +149,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     # shuffle priority
     potions = ["red", "green", "blue"]
+    random.seed(time.time())
     random.shuffle(potions)
+    print(Fore.YELLOW + f"Shuffled potion priority: {potions}" + Style.RESET_ALL)
     for potion in potions:
         purchase_barrels(potion, additional_ml_needed[potion])
 
