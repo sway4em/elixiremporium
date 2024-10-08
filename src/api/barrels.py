@@ -71,7 +71,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
     with db.engine.begin() as connection:
         result = connection.execute(text(
-            "SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold FROM global_inventory"
+            "SELECT num_green_ml, num_green_potions, num_blue_ml, num_blue_potions, num_red_ml, num_red_potions, gold, ml_capacity, potion_capacity FROM global_inventory"
         )).mappings()
         inventory = result.fetchone()
         if not inventory:
@@ -85,18 +85,23 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         num_blue_ml = inventory["num_blue_ml"]
         num_blue_potions = inventory["num_blue_potions"]
         gold = inventory["gold"]
+        ml_capacity = inventory["ml_capacity"]
+        potion_capacity = inventory["potion_capacity"]
 
     potion_ml_required = 100  # ml per potion
+    current_total_ml = num_green_ml + num_red_ml + num_blue_ml
+    current_total_potions = num_green_potions + num_red_potions + num_blue_potions
+
     desired_potions = {
-        "green": max(10 - num_green_potions, 0),
-        "red": max(10 - num_red_potions, 0),
-        "blue": max(10 - num_blue_potions, 0),
+        "green": min(max(10 - num_green_potions, 0), potion_capacity - current_total_potions),
+        "red": min(max(10 - num_red_potions, 0), potion_capacity - current_total_potions),
+        "blue": min(max(10 - num_blue_potions, 0), potion_capacity - current_total_potions),
     }
 
     additional_ml_needed = {
-        "green": max(desired_potions["green"] * potion_ml_required - num_green_ml, 0),
-        "red": max(desired_potions["red"] * potion_ml_required - num_red_ml, 0),
-        "blue": max(desired_potions["blue"] * potion_ml_required - num_blue_ml, 0),
+        "green": min(max(desired_potions["green"] * potion_ml_required - num_green_ml, 0), ml_capacity - current_total_ml),
+        "red": min(max(desired_potions["red"] * potion_ml_required - num_red_ml, 0), ml_capacity - current_total_ml),
+        "blue": min(max(desired_potions["blue"] * potion_ml_required - num_blue_ml, 0), ml_capacity - current_total_ml),
     }
 
     print(Fore.YELLOW + f"Additional ML needed: {additional_ml_needed}" + Style.RESET_ALL)
