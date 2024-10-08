@@ -128,9 +128,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     total_gold_spent = 0
 
     def purchase_barrels(potion_type: str, ml_needed: int):
-        nonlocal gold, total_gold_spent
+        nonlocal gold, total_gold_spent, current_total_ml
         for barrel in sorted_catalog[potion_type]:
-            if ml_needed <= 0:
+            if ml_needed <= 0 or current_total_ml >= ml_capacity:
                 break
             if barrel.quantity <= 0:
                 continue  # skip if no more barrels available
@@ -141,7 +141,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
                 continue
 
             barrels_needed = (ml_needed + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel
-            purchase_qty = min(max_purchase_qty, barrels_needed)
+            max_ml_purchase = min(ml_capacity - current_total_ml, ml_needed)
+            max_barrels_by_capacity = max_ml_purchase // barrel.ml_per_barrel
+            purchase_qty = min(max_purchase_qty, barrels_needed, max_barrels_by_capacity)
             if purchase_qty <= 0:
                 continue
 
@@ -149,7 +151,9 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
 
             gold -= barrel.price * purchase_qty
             total_gold_spent += barrel.price * purchase_qty
-            ml_needed -= barrel.ml_per_barrel * purchase_qty
+            ml_purchased = barrel.ml_per_barrel * purchase_qty
+            ml_needed -= ml_purchased
+            current_total_ml += ml_purchased
             print(Fore.CYAN + f"Purchased {purchase_qty} x {barrel.sku} for {barrel.price * purchase_qty} gold" + Style.RESET_ALL)
 
     # shuffle priority
