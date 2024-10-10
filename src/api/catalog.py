@@ -4,6 +4,8 @@ from src import database as db
 import sqlalchemy
 from sqlalchemy import text
 from colorama import Fore, Style
+import random
+import time
 
 router = APIRouter()
 
@@ -24,13 +26,14 @@ def get_catalog():
         num_green_potions = inventory['num_green_potions']
         num_blue_potions = inventory['num_blue_potions']
         catalog = []
+        random.seed(time.time())
 
         if num_red_potions > 0:
             catalog.append({
                 "sku": "red_potion_001",
                 "name": "Red Potion",
                 "quantity": num_red_potions,
-                "price": 50,
+                "price": [40,45,50,55,60][random.randint(0,4)],
                 "potion_type": [100, 0, 0, 0]
             })
         if num_green_potions > 0:
