@@ -41,13 +41,6 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
             for barrel in barrels_delivered:
                 print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
 
-                if len(barrel.potion_type) != 4:
-                    raise HTTPException(status_code=400, detail=f"Invalid potion_type length for SKU {barrel.sku}. Must have exactly four elements.")
-                if sum(barrel.potion_type) != 100:
-                    raise HTTPException(status_code=400, detail=f"potion_type proportions must sum to 100 for SKU {barrel.sku}.")
-                if barrel.potion_type.count(1) != 1:
-                    raise HTTPException(status_code=400, detail=f"Only one potion type can be active (set to 1) for SKU {barrel.sku}.")
-
                 red, green, blue, dark = barrel.potion_type
                 
                 # very ugly, fix later....
