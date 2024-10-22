@@ -61,31 +61,121 @@ def get_inventory():
         print(Fore.RED + f"Database error: {str(e)}" + Style.RESET_ALL)
         return {"error": "Failed to retrieve inventory data"}
 
-# Gets called once a day
 @router.post("/plan")
 def get_capacity_plan():
-    """
-    Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional
-    capacity unit costs 1000 gold.
-    """
-
     print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL)
-    print(Fore.MAGENTA + f"API called: /plan | response: [potion_capacity: 0, ml_capacity: 0]" + Style.RESET_ALL)
-    return {
-        "potion_capacity": 0,
-        "ml_capacity": 0
-        }
+
+    try:
+        with db.engine.connect() as connection:
+
+            result_potions = connection.execute(sqlalchemy.text("""
+                SELECT SUM(stock) AS number_of_potions
+                FROM inventory
+            """)).mappings()
+            row_potions = result_potions.fetchone()
+            number_of_potions = row_potions['number_of_potions'] if row_potions['number_of_potions'] is not None else 0
+
+            result_global = connection.execute(sqlalchemy.text("""
+                SELECT num_red_ml, num_green_ml, num_blue_ml, gold, ml_capacity, potion_capacity
+                FROM global_inventory
+                LIMIT 1
+            """)).mappings()
+            row_global = result_global.fetchone()
+
+            if not row_global:
+                print(Fore.RED + "No inventory data found in global_inventory" + Style.RESET_ALL)
+                return {"error": "No inventory data found"}
+
+            ml_in_barrels = (
+                (row_global['num_red_ml'] if row_global['num_red_ml'] is not None else 0) +
+                (row_global['num_green_ml'] if row_global['num_green_ml'] is not None else 0) +
+                (row_global['num_blue_ml'] if row_global['num_blue_ml'] is not None else 0)
+            )
+
+            current_ml_capacity = row_global['ml_capacity'] if row_global['ml_capacity'] is not None else 1
+            current_potion_capacity = row_global['potion_capacity'] if row_global['potion_capacity'] is not None else 1
+            available_gold = row_global['gold'] if row_global['gold'] is not None else 0
+
+            max_ml_storage = current_ml_capacity * 10000
+            max_potion_storage = current_potion_capacity * 50
+
+            ml_usage_percentage = (ml_in_barrels / max_ml_storage) * 100 if max_ml_storage > 0 else 100
+            potion_usage_percentage = (number_of_potions / max_potion_storage) * 100 if max_potion_storage > 0 else 100
+
+            needed_ml_capacity = 0
+            needed_potion_capacity = 0
+            total_cost = 0
+
+            if ml_usage_percentage > 70:
+                needed_ml_capacity = 1
+                total_cost += 1000
+
+            if potion_usage_percentage > 70:
+                needed_potion_capacity = 1
+                total_cost += 1000
+
+            if total_cost > available_gold:
+                if available_gold >= 1000:
+
+                    if ml_usage_percentage > potion_usage_percentage:
+                        needed_ml_capacity = 1
+                        needed_potion_capacity = 0
+                    else:
+                        needed_ml_capacity = 0
+                        needed_potion_capacity = 1
+                else:
+                    needed_ml_capacity = 0
+                    needed_potion_capacity = 0
+
+            response = {
+                "potion_capacity": needed_potion_capacity,
+                "ml_capacity": needed_ml_capacity
+            }
+
+            print(Fore.MAGENTA + f"API called: /plan | response: {response}" + Style.RESET_ALL)
+            return response
+
+    except Exception as e:
+        print(Fore.RED + f"Database error: {str(e)}" + Style.RESET_ALL)
+        return {"error": "Failed to calculate capacity plan"}
 
 class CapacityPurchase(BaseModel):
     potion_capacity: int
     ml_capacity: int
 
-# Gets called once a day
 @router.post("/deliver/{order_id}")
-def deliver_capacity_plan(capacity_purchase : CapacityPurchase, order_id: int):
-    """
-    Start with 1 capacity for 50 potions and 1 capacity for 10000 ml of potion. Each additional
-    capacity unit costs 1000 gold.
-    """
-    print(Fore.MAGENTA + f"API called: /deliver/{order_id} with capacity_purchase: {capacity_purchase} | Order ID: {order_id}, \nresponse: [OK]" + Style.RESET_ALL)
-    return "OK"
+def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
+    print(Fore.GREEN + "Calling deliver_capacity_plan()" + Style.RESET_ALL)
+
+    try:
+        with db.engine.connect() as connection:
+
+            total_cost = (capacity_purchase.potion_capacity + capacity_purchase.ml_capacity) * 1000
+
+            result = connection.execute(sqlalchemy.text("""
+                UPDATE global_inventory
+                SET 
+                    gold = gold - :cost,
+                    ml_capacity = ml_capacity + :ml_capacity,
+                    potion_capacity = potion_capacity + :potion_capacity
+                WHERE gold >= :cost
+                RETURNING gold, ml_capacity, potion_capacity
+            """), {
+                "cost": total_cost,
+                "ml_capacity": capacity_purchase.ml_capacity * 10000,
+                "potion_capacity": capacity_purchase.potion_capacity * 50
+            })
+
+            updated_row = result.fetchone()
+            connection.commit()
+
+            if not updated_row:
+                print(Fore.RED + "Insufficient gold for capacity purchase" + Style.RESET_ALL)
+                return {"error": "Insufficient gold for capacity purchase"}
+
+            print(Fore.MAGENTA + f"API called: /deliver/{order_id} with capacity_purchase: {capacity_purchase} | Order ID: {order_id}, \nresponse: [OK]" + Style.RESET_ALL)
+            return "OK"
+
+    except Exception as e:
+        print(Fore.RED + f"Database error: {str(e)}" + Style.RESET_ALL)
+        return {"error": "Failed to deliver capacity plan"}
