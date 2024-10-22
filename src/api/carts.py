@@ -13,7 +13,6 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
-# global vars for cart
 cart_id = "0"
 cart_mapping = {}
 
@@ -27,7 +26,6 @@ class search_sort_order(str, Enum):
     asc = "asc"
     desc = "desc"
 
-# implement later
 @router.get("/search/", tags=["search"])
 def search_orders(
     customer_name: str = "",
@@ -75,139 +73,275 @@ def search_orders(
         ],
     }
 
-
 class Customer(BaseModel):
     customer_name: str
     character_class: str
     level: int
 
+class CreateCartRequest(BaseModel):
+    customer_name: str
+    character_class: str
+    level: int
+    time_id: int
+
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
     """
-    Which customers visited the shop today?
+    Record customer visits.
     """
-    print(Fore.RED + "Calling /visits/{visit_id} endpoint")
-    print(Fore.YELLOW + f"visit_id: {visit_id}")
-    print(Fore.GREEN + f"customers: {customers}")
-    print(Style.RESET_ALL)
+    print(Fore.RED + f"Calling /visits/{visit_id} endpoint" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"visit_id: {visit_id}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"customers: {customers}" + Style.RESET_ALL)
 
-    # add to the customers table
-    with db.engine.begin() as connection:
-        for customer in customers:
-            connection.execute(text(f"INSERT INTO customers (customer_name, character_class, level) VALUES ('{customer.customer_name}', '{customer.character_class}', {customer.level})"))
+    try:
+        with db.engine.begin() as connection:
+
+            latest_time = connection.execute(
+                text("""
+                    SELECT id FROM time
+                    ORDER BY id DESC
+                    LIMIT 1
+                """)
+            ).mappings().fetchone()
+
+            if not latest_time:
+                raise HTTPException(status_code=500, detail="No time entries available.")
+
+            current_time_id = latest_time["id"]
+            print(Fore.BLUE + f"Current time_id: {current_time_id}" + Style.RESET_ALL)
+
+            for customer in customers:
+
+                connection.execute(
+                    text("""
+                        INSERT INTO visits (customer_id, time_id)
+                        VALUES (
+                            (SELECT id FROM customers WHERE name = :name),
+                            :time_id
+                        )
+                    """),
+                    {
+                        "name": customer.customer_name,
+                        "time_id": current_time_id
+                    }
+                )
+                print(Fore.GREEN + f"Recorded visit for customer: {customer.customer_name}" + Style.RESET_ALL)
+
+    except Exception as e:
+        print(Fore.RED + f"Database error in post_visits: {str(e)}" + Style.RESET_ALL)
+        raise HTTPException(status_code=500, detail="Failed to record visits.")
 
     return "OK"
 
-
-# creates a new cart and returns the cart_id
 @router.post("/")
 def create_cart(new_cart: Customer):
-    """ """
-    global cart_id
+    print(Fore.RED + "Calling /create_cart endpoint" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"new_cart: {new_cart}" + Style.RESET_ALL)
 
-    # cart id needs to be a string
-    cart_id =str(int(cart_id) + 1)
-    cart_mapping[cart_id] = {"customer" : new_cart, "items": {}}
+    try:
+        with db.engine.begin() as connection:
 
-    print(Fore.RED + "Calling / create cart endpoint")
-    print(Fore.YELLOW + f"new_cart: {new_cart}")
-    print(Fore.GREEN + f"cart_id: {cart_id}")
-    print(Style.RESET_ALL)
+            latest_time = connection.execute(
+                text("""
+                    SELECT id FROM time
+                    ORDER BY id DESC
+                    LIMIT 1
+                """)
+            ).mappings().fetchone()
 
-    print(Fore.MAGENTA + f"API called: / with new_cart: {new_cart} | response: [cart_id: {cart_id}]" + Style.RESET_ALL)
-    return {"cart_id": int(cart_id)}
+            if not latest_time:
+                raise HTTPException(status_code=500, detail="No time entries available.")
 
+            current_time_id = latest_time["id"]
+            print(Fore.BLUE + f"Current time_id: {current_time_id}" + Style.RESET_ALL)
+
+            cart_result = connection.execute(
+                text("""
+                    INSERT INTO carts (customer_id, time_id)
+                    VALUES (
+                        (SELECT id FROM customers WHERE name = :name),
+                        :time_id
+                    )
+                    RETURNING id
+                """),
+                {
+                    "name": new_cart.customer_name,
+                    "time_id": current_time_id
+                }
+            ).mappings().fetchone()
+
+            cart_id = cart_result["id"]
+            print(Fore.GREEN + f"Created cart with cart_id: {cart_id}" + Style.RESET_ALL)
+
+    except Exception as e:
+        print(Fore.RED + f"Database error in create_cart: {str(e)}" + Style.RESET_ALL)
+        raise HTTPException(status_code=500, detail="Failed to create cart.")
+
+    print(Fore.MAGENTA + f"API called: /create_cart with new_cart: {new_cart} | response: [cart_id: {cart_id}]" + Style.RESET_ALL)
+    return {"cart_id": cart_id}
 
 class CartItem(BaseModel):
     quantity: int
 
-# add item to cart (update to use CartItem later)
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
-    """ """
-    print(Fore.RED + "Calling /{cart_id}/items/{item_sku} endpoint")
-    print(Fore.YELLOW + f"cart_id: {cart_id}")
-    print(Fore.YELLOW + f"item_sku: {item_sku}")
-    print(Fore.GREEN + f"cart_item: {cart_item}")
-    print(Style.RESET_ALL)
+    """
+    Add or update the quantity of an item in the cart.
+    """
+    print(Fore.RED + f"Calling /{cart_id}/items/{item_sku} endpoint" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"cart_id: {cart_id}" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"item_sku: {item_sku}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"cart_item: {cart_item}" + Style.RESET_ALL)
 
-    cart_id = str(cart_id)
-    if cart_id not in cart_mapping:
-        return {"success": False}
+    try:
+        with db.engine.begin() as connection:
 
-    cart = cart_mapping[cart_id]
-    if not hasattr(cart, 'items'):
-        cart["items"] = {}
+            result = connection.execute(
+                text("SELECT id FROM recipes WHERE LOWER(name) = :sku"),
+                {"sku": item_sku.lower()}
+            ).mappings().fetchone()
 
-    cart["items"][item_sku] = cart_item.quantity
+            if not result:
+                raise HTTPException(status_code=400, detail=f"Invalid item SKU: {item_sku}")
+
+            recipe_id = result["id"]
+
+            cart_exists = connection.execute(
+                text("SELECT 1 FROM carts WHERE id = :cart_id"),
+                {"cart_id": cart_id}
+            ).mappings().fetchone()
+
+            if not cart_exists:
+                raise HTTPException(status_code=404, detail="Cart not found")
+
+            line_item = connection.execute(
+                text("""
+                    SELECT id FROM cart_line_items
+                    WHERE cart_id = :cart_id AND recipe_id = :recipe_id
+                """),
+                {"cart_id": cart_id, "recipe_id": recipe_id}
+            ).mappings().fetchone()
+
+            if line_item:
+
+                connection.execute(
+                    text("""
+                        UPDATE cart_line_items
+                        SET quantity = :quantity
+                        WHERE id = :line_item_id
+                    """),
+                    {"quantity": cart_item.quantity, "line_item_id": line_item["id"]}
+                )
+                print(Fore.GREEN + f"Updated quantity for item_sku: {item_sku} in cart_id: {cart_id}" + Style.RESET_ALL)
+            else:
+
+                connection.execute(
+                    text("""
+                        INSERT INTO cart_line_items (cart_id, recipe_id, quantity)
+                        VALUES (:cart_id, :recipe_id, :quantity)
+                    """),
+                    {"cart_id": cart_id, "recipe_id": recipe_id, "quantity": cart_item.quantity}
+                )
+                print(Fore.GREEN + f"Added item_sku: {item_sku} to cart_id: {cart_id}" + Style.RESET_ALL)
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(Fore.RED + f"Database error in set_item_quantity: {str(e)}" + Style.RESET_ALL)
+        raise HTTPException(status_code=500, detail="Failed to add/update item in cart.")
+
     print(Fore.MAGENTA + f"API called: /{cart_id}/items/{item_sku} with cart_item: {cart_item} | response: [success: True]" + Style.RESET_ALL)
     return {"success": True}
 
 class CartCheckout(BaseModel):
     payment: str
 
-# checkout cart update to use CartCheckout later
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
-    """
-    Handles the checkout process for a specific cart.
-    """
-    print(Fore.RED + f"Calling /{cart_id}/checkout endpoint")
-    print(Fore.YELLOW + f"cart_id: {cart_id}")
-    print(Fore.GREEN + f"cart_checkout: {cart_checkout}")
-    print(Style.RESET_ALL)
-
-    cart_id = str(cart_id)
-    if cart_id not in cart_mapping:
-        raise HTTPException(status_code=404, detail="Cart not found")
-    cart = cart_mapping[cart_id]
-    if not hasattr(cart, 'items') or not cart.items:
-        raise HTTPException(status_code=400, detail="Cart is empty")
+    print(Fore.RED + f"Calling /{cart_id}/checkout endpoint" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"cart_id: {cart_id}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"cart_checkout: {cart_checkout}" + Style.RESET_ALL)
 
     try:
-        print(Fore.BLUE + "Fetching catalog")
-        # ugly fix later
-        catalog_response = requests.get("https://polypotionpeddlers.onrender.com/catalog/")
-        print(Fore.GREEN + f"Catalog response: {catalog_response}")
-        catalog_response.raise_for_status()
-        catalog = catalog_response.json()
-    except requests.RequestException as e:
-        raise HTTPException(status_code=500, detail=f"Failed to fetch catalog: {str(e)}")
+        with db.engine.begin() as connection:
 
-    # dict for quck lookup
-    catalog_dict = {item['sku']: item for item in catalog}
-    print(Fore.BLUE + f"Catalog dict: {catalog_dict}")
-    total_potions_bought = 0
-    total_gold_paid = 0
-    green_potions = 0
-    red_potions = 0
-    blue_potions = 0
-    # ugly fix later
-    for item_sku, quantity in cart["items"].items():
-        print(Fore.BLUE + f"Processing item: {item_sku}, quantity: {quantity}")
-        if item_sku in catalog_dict:
-            total_potions_bought += quantity
-            if "green" in catalog_dict[item_sku]["name"].lower():
-                green_potions += quantity
-            elif "red" in catalog_dict[item_sku]["name"].lower():
-                red_potions += quantity
-            elif "blue" in catalog_dict[item_sku]["name"].lower():
-                blue_potions += quantity
-            total_gold_paid += quantity * catalog_dict[item_sku]["price"]
-        else:
-            raise HTTPException(status_code=400, detail=f"Invalid item in cart: {item_sku}")
+            cart = connection.execute(
+                text("SELECT * FROM carts WHERE id = :cart_id"),
+                {"cart_id": cart_id}
+            ).mappings().fetchone()
 
-    # ugly fix later
-    with db.engine.begin() as connection:
-        connection.execute(text(f"UPDATE global_inventory SET num_red_potions = num_red_potions - {red_potions}, num_green_potions = num_green_potions - {green_potions}, num_blue_potions = num_blue_potions - {blue_potions}, gold = gold + {total_gold_paid}"))
+            if not cart:
+                raise HTTPException(status_code=404, detail="Cart not found")
 
-    # reset cart (not sure if this updates the global cart)
-    cart["items"] = {}
+            cart_items = connection.execute(
+                text("""
+                    SELECT cli.recipe_id, cli.quantity, p.rp AS price
+                    FROM cart_line_items cli
+                    JOIN prices p ON cli.recipe_id = p.potion_id
+                    WHERE cli.cart_id = :cart_id
+                """),
+                {"cart_id": cart_id}
+            ).mappings().fetchall()
 
-    print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold paid: {total_gold_paid}")
+            if not cart_items:
+                raise HTTPException(status_code=400, detail="Cart is empty")
+
+            total_potions_bought = 0
+            total_gold_paid = 0
+
+            for item in cart_items:
+
+                stock_result = connection.execute(
+                    text("""
+                        SELECT stock FROM inventory
+                        WHERE potion_id = :potion_id
+                    """),
+                    {"potion_id": item["recipe_id"]}
+                ).mappings().fetchone()
+
+                if not stock_result:
+                    raise HTTPException(status_code=400, detail=f"Inventory data not found for potion_id: {item['recipe_id']}")
+
+                current_stock = stock_result["stock"]
+
+                if item["quantity"] > current_stock:
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Not enough stock for potion_id: {item['recipe_id']}. Available: {current_stock}, Requested: {item['quantity']}"
+                    )
+
+                total_potions_bought += item["quantity"]
+                total_gold_paid += item["quantity"] * item["price"]
+
+            for item in cart_items:
+                connection.execute(
+                    text("""
+                        UPDATE inventory
+                        SET stock = stock - :quantity
+                        WHERE potion_id = :potion_id
+                    """),
+                    {"quantity": item["quantity"], "potion_id": item["recipe_id"]}
+                )
+                print(Fore.GREEN + f"Updated stock for potion_id: {item['recipe_id']} by -{item['quantity']}" + Style.RESET_ALL)
+
+            connection.execute(
+                text("""
+                    UPDATE global_inventory
+                    SET gold = gold + :total_gold_paid
+                """),
+                {"total_gold_paid": total_gold_paid}
+            )
+            print(Fore.GREEN + f"Updated global gold by +{total_gold_paid}" + Style.RESET_ALL)
+
+    except HTTPException as he:
+        raise he
+    except Exception as e:
+        print(Fore.RED + f"Database error in checkout: {str(e)}" + Style.RESET_ALL)
+        raise HTTPException(status_code=500, detail="Failed to process checkout.")
+
+    print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold paid: {total_gold_paid}" + Style.RESET_ALL)
     print(Fore.MAGENTA + f"API called: /{cart_id}/checkout with cart_checkout: {cart_checkout} | response: [total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}]" + Style.RESET_ALL)
     print(Style.RESET_ALL)
-
     return {
         "total_potions_bought": total_potions_bought,
         "total_gold_paid": total_gold_paid
