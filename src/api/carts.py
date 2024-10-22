@@ -112,7 +112,27 @@ def post_visits(visit_id: int, customers: list[Customer]):
             print(Fore.BLUE + f"Current time_id: {current_time_id}" + Style.RESET_ALL)
 
             for customer in customers:
-
+                result = connection.execute(
+                                text("SELECT id FROM customers WHERE name = :name"),
+                                {"name": customer.customer_name}
+                            ).mappings().fetchone()
+                if result:
+                    customer_id = result["id"]
+                else:
+                    customer_result = connection.execute(
+                        text("""
+                            INSERT INTO customers (name, class, level)
+                            VALUES (:name, :class, :level)
+                            RETURNING id
+                        """),
+                        {
+                            "name": customer.customer_name,
+                            "class": customer.character_class,
+                            "level": customer.level
+                        }
+                    ).mappings().fetchone()
+                    customer_id = customer_result["id"]
+                    
                 connection.execute(
                     text("""
                         INSERT INTO visits (customer_id, time_id)
