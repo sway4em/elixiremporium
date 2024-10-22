@@ -11,6 +11,7 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+# Get current inventory
 @router.get("/audit")
 def get_inventory():
     print(Fore.GREEN + "Calling get_inventory()" + Style.RESET_ALL)
@@ -61,6 +62,7 @@ def get_inventory():
         print(Fore.RED + f"Database error: {str(e)}" + Style.RESET_ALL)
         return {"error": "Failed to retrieve inventory data"}
 
+# Get capacity plan
 @router.post("/plan")
 def get_capacity_plan():
     print(Fore.GREEN + "Calling get_capacity_plan()" + Style.RESET_ALL)
@@ -106,6 +108,7 @@ def get_capacity_plan():
             needed_potion_capacity = 0
             total_cost = 0
 
+            # If usage is more than 70%, buy more capacity
             if ml_usage_percentage > 70:
                 needed_ml_capacity = 1
                 total_cost += 1000
@@ -114,6 +117,7 @@ def get_capacity_plan():
                 needed_potion_capacity = 1
                 total_cost += 1000
 
+            # If total cost is more than available gold, buy the one with the highest usage
             if total_cost > available_gold:
                 if available_gold >= 1000:
 
@@ -143,6 +147,7 @@ class CapacityPurchase(BaseModel):
     potion_capacity: int
     ml_capacity: int
 
+# Deliver purchased capacity
 @router.post("/deliver/{order_id}")
 def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
     print(Fore.GREEN + "Calling deliver_capacity_plan()" + Style.RESET_ALL)

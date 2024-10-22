@@ -84,6 +84,7 @@ class CreateCartRequest(BaseModel):
     level: int
     time_id: int
 
+# Update visits table
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
     """
@@ -133,6 +134,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
 
     return "OK"
 
+# Generate an empty cart
 @router.post("/")
 def create_cart(new_cart: Customer):
     print(Fore.RED + "Calling /create_cart endpoint" + Style.RESET_ALL)
@@ -183,6 +185,7 @@ def create_cart(new_cart: Customer):
 class CartItem(BaseModel):
     quantity: int
 
+# Update cart line items
 @router.post("/{cart_id}/items/{item_sku}")
 def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     """
@@ -256,6 +259,7 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
 class CartCheckout(BaseModel):
     payment: str
 
+# Checkout cart
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(Fore.RED + f"Calling /{cart_id}/checkout endpoint" + Style.RESET_ALL)
@@ -273,6 +277,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             if not cart:
                 raise HTTPException(status_code=404, detail="Cart not found")
 
+            # Get cart items
             cart_items = connection.execute(
                 text("""
                     SELECT cli.recipe_id, cli.quantity, p.rp AS price
@@ -289,6 +294,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             total_potions_bought = 0
             total_gold_paid = 0
 
+            # Calculate total potions bought and total cost
             for item in cart_items:
 
                 stock_result = connection.execute(

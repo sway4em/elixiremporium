@@ -19,12 +19,14 @@ class PotionInventory(BaseModel):
     potion_type: list[int]
     quantity: int
 
+# Update inventory with the delivered potions
 @router.post("/deliver/{order_id}")
 def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int):
     print(Fore.RED + f"Calling /bottler/deliver/{order_id}" + Style.RESET_ALL)
     print(Fore.GREEN + f"Delivering potions for order ID: {order_id}" + Style.RESET_ALL)
     total_potions = 0
 
+    # Track updates for global_inventory
     ml_adjustments = {
         'num_red_ml': 0,
         'num_green_ml': 0,
@@ -63,6 +65,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
                 ml_adjustments['num_blue_ml'] += blue * quantity
                 ml_adjustments['num_dark_ml'] += dark * quantity
 
+                # Update inventory stock
                 connection.execute(
                     text("""
                         UPDATE inventory
@@ -78,6 +81,7 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
             print(Fore.CYAN + f"Total potions delivered: {total_potions}" + Style.RESET_ALL)
             print(Fore.CYAN + f"ML adjustments: {ml_adjustments}" + Style.RESET_ALL)
 
+            # Update num_mls in global_inventory
             connection.execute(
                 text("""
                     UPDATE global_inventory
@@ -103,12 +107,13 @@ def post_deliver_bottles(potions_delivered: list[PotionInventory], order_id: int
 
     return {"status": "success", "total_potions_delivered": total_potions}
 
+# Generate a bottling plan
 @router.post("/plan")
 def get_bottle_plan():
     print(Fore.RED + f"Calling /bottler/plan" + Style.RESET_ALL)
     try:
         with db.engine.connect() as connection:
-
+            # Fetch num_mls and potion_capacity from global_inventory
             inventory = connection.execute(
                 text("""
                     SELECT ml_capacity, potion_capacity, num_red_ml, num_green_ml, num_blue_ml, num_dark_ml
@@ -130,7 +135,7 @@ def get_bottle_plan():
             }
 
             print(Fore.BLUE + f"Inventory: ml_capacity={ml_capacity}, potion_limit={potion_limit}, available_ml={available_ml}" + Style.RESET_ALL)
-
+            # Fetch all recipes
             recipes = connection.execute(
                 text("""
                     SELECT id, name, red, green, blue, dark
@@ -151,6 +156,7 @@ def get_bottle_plan():
             total_ml_used = 0
             total_potions_planned = 0
 
+            # Randomize recipes and make as many as possible
             for recipe in recipes_list:
                 red = recipe["red"]
                 green = recipe["green"]

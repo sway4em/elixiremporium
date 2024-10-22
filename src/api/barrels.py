@@ -23,6 +23,7 @@ class Barrel(BaseModel):
 
     quantity: int
 
+# Update global_inventory with the delivered barrels
 @router.post("/deliver/{order_id}")
 def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
     print(Fore.RED + f"Calling post_deliver_barrels with barrels_delivered: {barrels_delivered} | Order ID: {order_id}" + Style.RESET_ALL)
@@ -48,7 +49,8 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                     raise HTTPException(status_code=400, detail=f"Only one potion type can be active (set to 1) for SKU {barrel.sku}.")
 
                 red, green, blue, dark = barrel.potion_type
-
+                
+                # very ugly, fix later....
                 if [red, green, blue, dark] == [0, 1, 0, 0]:
                     print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
                     total_green_ml += barrel.ml_per_barrel * barrel.quantity
@@ -109,6 +111,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
         "gold_spent": gold_spent
     }
 
+# Get the wholesale purchase plan
 @router.post("/plan")
 def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(Fore.RED + f"Calling get_wholesale_purchase_plan with wholesale_catalog: {wholesale_catalog}" + Style.RESET_ALL)
@@ -137,6 +140,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         print(Fore.RED + f"Database error while fetching inventory: {str(e)}" + Style.RESET_ALL)
         raise HTTPException(status_code=500, detail="Failed to fetch inventory.")
 
+    # Aim for 25% of each color
     target_ml_per_color = ml_capacity // 4
     ml_needed = {
         "green": max(target_ml_per_color - num_green_ml, 0),
@@ -148,6 +152,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     print(Fore.YELLOW + f"Target ML per color: {target_ml_per_color}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"ML needed per color: {ml_needed}" + Style.RESET_ALL)
 
+    # Sort by cost-effectiveness
+    # very ugly, fix later....
     sorted_catalog = {
         "green": sorted(
             [barrel for barrel in wholesale_catalog if barrel.potion_type == [0, 1, 0, 0]],
@@ -172,7 +178,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     purchase_plan = []
     total_gold_spent = 0
 
-    def purchase_barrels(color: str, ml_needed_color: int):
+    def purchase_barrels(color, ml_needed_color):
         nonlocal gold, total_gold_spent
         for barrel in sorted_catalog[color]:
             print(Fore.BLUE + f"Processing {color}" + Style.RESET_ALL)
@@ -214,10 +220,15 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             ml_needed[color] = max(ml_needed[color], 0)  
             print(Fore.BLUE + f"color: {color}, ml_needed[color]: {ml_needed[color]}" + Style.RESET_ALL)
             print(Fore.GREEN + f"Purchased {barrels_to_buy} x {barrel.sku} for {barrels_to_buy * barrel.price} gold, adding {ml_provided} ml to {color}" + Style.RESET_ALL)
+            
+            # Break out of the loop if we have enough
             if ml_needed[color] <= 0:
                 break
-
-    for color in ["green", "red", "blue", "dark"]:
+    
+    colors = ["green", "red", "blue", "dark"]
+    # randomize the order of colors to avoid favoring one color
+    random.shuffle(colors)
+    for color in colors:
         if ml_needed[color] > 0:
             print(Fore.CYAN + f"Processing purchases for {color} (ML needed: {ml_needed[color]})" + Style.RESET_ALL)
             purchase_barrels(color, ml_needed[color])

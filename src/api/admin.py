@@ -12,6 +12,7 @@ router = APIRouter(
     dependencies=[Depends(auth.get_api_key)],
 )
 
+# Reset db
 @router.post("/reset")
 def reset():
     print(Fore.RED + "Resetting game state" + Style.RESET_ALL)
@@ -19,6 +20,7 @@ def reset():
     try:
         with db.engine.begin() as connection:
             print(Fore.YELLOW + "Resetting global_inventory" + Style.RESET_ALL)
+            # Reset global_inventory
             connection.execute(
                 text("""
                     UPDATE global_inventory
@@ -38,6 +40,7 @@ def reset():
                 """)
             )
             
+            # Set stock of all potions to 0
             print(Fore.YELLOW + "Resetting inventory table" + Style.RESET_ALL)
             connection.execute(
                 text("""
