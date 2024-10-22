@@ -175,6 +175,8 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
     def purchase_barrels(color: str, ml_needed_color: int):
         nonlocal gold, total_gold_spent
         for barrel in sorted_catalog[color]:
+            print(Fore.BLUE + f"Processing {color}" + Style.RESET_ALL)
+            print(Fore.BLUE + f"ml_needed_color: {ml_needed_color}" + Style.RESET_ALL)
             if ml_needed_color <= 0:
                 break  
             if barrel.quantity <= 0:
@@ -210,8 +212,10 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             gold -= barrels_to_buy * barrel.price
             ml_needed[color] -= ml_provided
             ml_needed[color] = max(ml_needed[color], 0)  
-
+            print(Fore.BLUE + f"color: {color}, ml_needed[color]: {ml_needed[color]}" + Style.RESET_ALL)
             print(Fore.GREEN + f"Purchased {barrels_to_buy} x {barrel.sku} for {barrels_to_buy * barrel.price} gold, adding {ml_provided} ml to {color}" + Style.RESET_ALL)
+            if ml_needed[color] <= 0:
+                break
 
     for color in ["green", "red", "blue", "dark"]:
         if ml_needed[color] > 0:
