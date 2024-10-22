@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from src.api import auth
-import math
 import sqlalchemy
 from src import database as db
 from colorama import Fore, Style
@@ -14,38 +13,52 @@ router = APIRouter(
 
 @router.get("/audit")
 def get_inventory():
-    """
-    Retrieve the current inventory status from the database.
-    """
     print(Fore.GREEN + "Calling get_inventory()" + Style.RESET_ALL)
-    sql_to_execute = """
-    SELECT num_red_potions, num_red_ml, num_blue_potions, num_blue_ml, num_green_potions, num_green_ml, gold FROM global_inventory
-    """
     try:
         with db.engine.connect() as connection:
-            result = connection.execute(sqlalchemy.text(sql_to_execute)).mappings()
-            row = result.fetchone()
 
-            if row:
-                print(Fore.GREEN + "Inventory data found" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of red potions: {row['num_red_potions']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of green potions: {row['num_green_potions']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of blue potions: {row['num_blue_potions']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Total number of potions: {row['num_red_potions'] + row['num_green_potions'] + row['num_blue_potions']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of red ml: {row['num_red_ml']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of green ml: {row['num_green_ml']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Number of blue ml: {row['num_blue_ml']}" + Style.RESET_ALL)
-                print(Fore.GREEN + f"Gold: {row['gold']}" + Style.RESET_ALL)
-                print(Fore.MAGENTA + f"API called: /audit | response: {row}" + Style.RESET_ALL)
+            result_potions = connection.execute(sqlalchemy.text("""
+                SELECT SUM(stock) AS number_of_potions
+                FROM inventory
+            """)).mappings()
+            row_potions = result_potions.fetchone()
+            number_of_potions = row_potions['number_of_potions'] if row_potions['number_of_potions'] is not None else 0
+            print(Fore.GREEN + f"Number of potions: {number_of_potions}" + Style.RESET_ALL)
+
+            result_global = connection.execute(sqlalchemy.text("""
+                SELECT num_red_ml, num_green_ml, num_blue_ml, gold
+                FROM global_inventory
+                LIMIT 1
+            """)).mappings()
+            row_global = result_global.fetchone()
+
+            if row_global:
+
+                ml_in_barrels = (
+                    (row_global['num_red_ml'] if row_global['num_red_ml'] is not None else 0) +
+                    (row_global['num_green_ml'] if row_global['num_green_ml'] is not None else 0) +
+                    (row_global['num_blue_ml'] if row_global['num_blue_ml'] is not None else 0)
+                )
+                gold = row_global['gold'] if row_global['gold'] is not None else 0
+
+                print(Fore.GREEN + f"ML in barrels: {ml_in_barrels}" + Style.RESET_ALL)
+                print(Fore.GREEN + f"Gold: {gold}" + Style.RESET_ALL)
+
+                print(Fore.MAGENTA + f"API called: /audit | response: {{ 'number_of_potions': {number_of_potions}, 'ml_in_barrels': {ml_in_barrels}, 'gold': {gold} }}" + Style.RESET_ALL)
+
                 return {
-                    "number_of_potions": sum([row['num_red_potions'], row['num_green_potions'], row['num_blue_potions']]),
-                    "ml_in_barrels": sum([row['num_red_ml'], row['num_green_ml'], row['num_blue_ml']]),
-                    "gold": row['gold']
+                    "number_of_potions": number_of_potions,
+                    "ml_in_barrels": ml_in_barrels,
+                    "gold": gold
                 }
             else:
+
+                print(Fore.RED + f"No inventory data found in global_inventory" + Style.RESET_ALL)
                 return {"error": "No inventory data found"}
+
     except Exception as e:
-        print(f"Database error: {str(e)}")
+
+        print(Fore.RED + f"Database error: {str(e)}" + Style.RESET_ALL)
         return {"error": "Failed to retrieve inventory data"}
 
 # Gets called once a day
