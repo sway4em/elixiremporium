@@ -127,13 +127,13 @@ def get_bottle_plan():
 
             ml_capacity = inventory["ml_capacity"]
             potion_limit = inventory["potion_capacity"]
-            with db.engine.connect() as connection:
-                result_potions = connection.execute(sqlalchemy.text("""
-                    SELECT SUM(stock) AS number_of_potions
-                    FROM inventory
-                """)).mappings()
-                row_potions = result_potions.fetchone()
-                number_of_potions = row_potions['number_of_potions'] if row_potions['number_of_potions'] is not None else 0
+            
+            result_potions = connection.execute(sqlalchemy.text("""
+                SELECT SUM(stock) AS number_of_potions
+                FROM inventory
+            """)).mappings()
+            row_potions = result_potions.fetchone()
+            number_of_potions = row_potions['number_of_potions'] if row_potions['number_of_potions'] is not None else 0
             potion_limit = potion_limit - number_of_potions
             available_ml = {
                 'red': inventory["num_red_ml"],
