@@ -134,6 +134,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         raise HTTPException(status_code=500, detail="Failed to fetch inventory.")
 
     # Aim for 25% of each color
+    ml_capacity = ml_capacity - num_green_ml - num_red_ml - num_blue_ml - num_dark_ml
     target_ml_per_color = ml_capacity // 4
     ml_needed = {
         "green": max(target_ml_per_color - num_green_ml, 0),
