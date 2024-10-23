@@ -76,7 +76,7 @@ def get_capacity_plan():
             """)).mappings()
             row_potions = result_potions.fetchone()
             number_of_potions = row_potions['number_of_potions'] if row_potions['number_of_potions'] is not None else 0
-
+            print(Fore.GREEN + f"Number of potions: {number_of_potions}" + Style.RESET_ALL)
             result_global = connection.execute(sqlalchemy.text("""
                 SELECT num_red_ml, num_green_ml, num_blue_ml, gold, ml_capacity, potion_capacity
                 FROM global_inventory
@@ -98,8 +98,8 @@ def get_capacity_plan():
             current_potion_capacity = row_global['potion_capacity'] if row_global['potion_capacity'] is not None else 1
             available_gold = row_global['gold'] if row_global['gold'] is not None else 0
 
-            max_ml_storage = current_ml_capacity * 10000
-            max_potion_storage = current_potion_capacity * 50
+            max_ml_storage = current_ml_capacity
+            max_potion_storage = current_potion_capacity
 
             ml_usage_percentage = (ml_in_barrels / max_ml_storage) * 100 if max_ml_storage > 0 else 100
             potion_usage_percentage = (number_of_potions / max_potion_storage) * 100 if max_potion_storage > 0 else 100
@@ -108,6 +108,8 @@ def get_capacity_plan():
             needed_potion_capacity = 0
             total_cost = 0
 
+            print(Fore.BLUE + f"ML in barrels: {ml_in_barrels}, max_ml_storage: {max_ml_storage}, ml_usage_percentage: {ml_usage_percentage}" + Style.RESET_ALL)
+            print(Fore.BLUE + f"Number of potions: {number_of_potions}, max_potion_storage: {max_potion_storage}, potion_usage_percentage: {potion_usage_percentage}" + Style.RESET_ALL)
             # If usage is more than 70%, buy more capacity
             if ml_usage_percentage > 70:
                 needed_ml_capacity = 1
