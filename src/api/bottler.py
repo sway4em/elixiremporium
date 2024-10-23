@@ -163,51 +163,63 @@ def get_bottle_plan():
             bottling_plan = []
             total_ml_used = 0
             total_potions_planned = 0
+            can_add_more = True
 
-            # Randomize recipes and make as many as possible
-            for recipe in recipes_list:
-                red = recipe["red"]
-                green = recipe["green"]
-                blue = recipe["blue"]
-                dark = recipe["dark"]
-
-                max_bottles_red = available_ml['red'] // red if red > 0 else float('inf')
-                max_bottles_green = available_ml['green'] // green if green > 0 else float('inf')
-                max_bottles_blue = available_ml['blue'] // blue if blue > 0 else float('inf')
-                max_bottles_dark = available_ml['dark'] // dark if dark > 0 else float('inf')
-
-                max_bottles = min(max_bottles_red, max_bottles_green, max_bottles_blue, max_bottles_dark)
-
-                if max_bottles == 0:
-                    continue  
-
-                remaining_ml_capacity = ml_capacity - total_ml_used
-                remaining_potion_limit = potion_limit - total_potions_planned
-
-                bottles_fit_ml = remaining_ml_capacity // 100
-                bottles_to_make = min(max_bottles, bottles_fit_ml, remaining_potion_limit)
-
-                if bottles_to_make <= 0:
-                    break  
-
-                bottling_plan.append({
-                    "potion_type": [red, green, blue, dark],
-                    "quantity": bottles_to_make
-                })
-
-                total_ml_used += bottles_to_make * 100
-                total_potions_planned += bottles_to_make
-
-                available_ml['red'] -= red * bottles_to_make
-                available_ml['green'] -= green * bottles_to_make
-                available_ml['blue'] -= blue * bottles_to_make
-                available_ml['dark'] -= dark * bottles_to_make
-
-                print(Fore.GREEN + f"Planned to bottle {bottles_to_make} of {recipe['name']} (Type: {red}R, {green}G, {blue}B, {dark}D)" + Style.RESET_ALL)
-
-                if total_ml_used >= ml_capacity or total_potions_planned >= potion_limit:
-                    break
-
+            while can_add_more:
+                can_add_more = False
+                
+                for recipe in recipes_list:
+                    if total_potions_planned >= potion_limit:
+                        can_add_more = False
+                        break
+                        
+                    red = recipe["red"]
+                    green = recipe["green"]
+                    blue = recipe["blue"]
+                    dark = recipe["dark"]
+                    
+                    if (available_ml['red'] >= red and 
+                        available_ml['green'] >= green and 
+                        available_ml['blue'] >= blue and 
+                        available_ml['dark'] >= dark and 
+                        total_ml_used + 100 <= ml_capacity and 
+                        total_potions_planned + 1 <= potion_limit):
+                        
+                        existing_potion = next(
+                            (p for p in bottling_plan 
+                            if p["potion_type"] == [red, green, blue, dark]), 
+                            None
+                        )
+                        
+                        if existing_potion:
+                            if total_potions_planned + 1 <= potion_limit:
+                                existing_potion["quantity"] += 1
+                                total_potions_planned += 1
+                                total_ml_used += 100
+                                
+                                available_ml['red'] -= red
+                                available_ml['green'] -= green
+                                available_ml['blue'] -= blue
+                                available_ml['dark'] -= dark
+                                
+                                print(Fore.GREEN + f"Added 1 more of {recipe['name']} (Type: {red}R, {green}G, {blue}B, {dark}D)" + Style.RESET_ALL)
+                                can_add_more = True
+                        else:
+                            if total_potions_planned + 1 <= potion_limit:
+                                bottling_plan.append({
+                                    "potion_type": [red, green, blue, dark],
+                                    "quantity": 1
+                                })
+                                total_potions_planned += 1
+                                total_ml_used += 100
+                                
+                                available_ml['red'] -= red
+                                available_ml['green'] -= green
+                                available_ml['blue'] -= blue
+                                available_ml['dark'] -= dark
+                                
+                                print(Fore.GREEN + f"Added 1 more of {recipe['name']} (Type: {red}R, {green}G, {blue}B, {dark}D)" + Style.RESET_ALL)
+                                can_add_more = True
             print(Fore.CYAN + f"Total potions to bottle: {total_potions_planned}, Total ml used: {total_ml_used}" + Style.RESET_ALL)
 
     except HTTPException as he:
