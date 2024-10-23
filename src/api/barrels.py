@@ -42,7 +42,7 @@ def post_deliver_barrels(barrels_delivered: list[Barrel], order_id: int):
                 print(Fore.YELLOW + f"Barrel: {barrel}" + Style.RESET_ALL)
 
                 red, green, blue, dark = barrel.potion_type
-                
+
                 # very ugly, fix later....
                 if [red, green, blue, dark] == [0, 1, 0, 0]:
                     print(Fore.YELLOW + f"Green barrel delivered" + Style.RESET_ALL)
@@ -134,18 +134,26 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
         raise HTTPException(status_code=500, detail="Failed to fetch inventory.")
 
     # Aim for 25% of each color
-    ml_capacity = ml_capacity - num_green_ml - num_red_ml - num_blue_ml - num_dark_ml
-    target_ml_per_color = ml_capacity // 4
+    #ml_capacity = ml_capacity - num_green_ml - num_red_ml - num_blue_ml - num_dark_ml
+    base_target_ml_per_color = ml_capacity // 4
     ml_needed = {
-        "green": max(target_ml_per_color - num_green_ml, 0),
-        "red": max(target_ml_per_color - num_red_ml, 0),
-        "blue": max(target_ml_per_color - num_blue_ml, 0),
-        "dark": max(target_ml_per_color - num_dark_ml, 0),
+        "green": max(base_target_ml_per_color - num_green_ml, 0),
+        "red": max(base_target_ml_per_color - num_red_ml, 0),
+        "blue": max(base_target_ml_per_color - num_blue_ml, 0),
+        "dark": max(base_target_ml_per_color - num_dark_ml, 0),
     }
+    #ml_needed = {
+     #   "green": max(target_ml_per_color - num_green_ml, 0),
+      #  "red": max(target_ml_per_color - num_red_ml, 0),
+       # "blue": max(target_ml_per_color - num_blue_ml, 0),
+        #"dark": max(target_ml_per_color - num_dark_ml, 0),
+    #}
 
-    print(Fore.YELLOW + f"Target ML per color: {target_ml_per_color}" + Style.RESET_ALL)
+    #print(Fore.YELLOW + f"Target ML per color: {target_ml_per_color}" + Style.RESET_ALL)
+    #print(Fore.YELLOW + f"ML needed per color: {ml_needed}" + Style.RESET_ALL)
+
+    print(Fore.YELLOW + f"Current inventory: Green ML: {num_green_ml}, Red ML: {num_red_ml}, Blue ML: {num_blue_ml}, Dark ML: {num_dark_ml}, Gold: {gold}" + Style.RESET_ALL)
     print(Fore.YELLOW + f"ML needed per color: {ml_needed}" + Style.RESET_ALL)
-
     # Sort by cost-effectiveness
     # very ugly, fix later....
     sorted_catalog = {
@@ -178,17 +186,20 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             print(Fore.BLUE + f"Processing {color}" + Style.RESET_ALL)
             print(Fore.BLUE + f"ml_needed_color: {ml_needed_color}" + Style.RESET_ALL)
             if ml_needed_color <= 0:
-                break  
+                break
             if barrel.quantity <= 0:
-                continue  
+                continue
 
-            barrels_needed = ml_needed_color // barrel.ml_per_barrel  
+            barrels_needed = ml_needed_color // barrel.ml_per_barrel
+            print(Fore.BLUE + f"color: {color} ml_needed_color: {ml_needed_color}" + Style.RESET_ALL)
+            print(Fore.BLUE + f"barrels_needed: {barrels_needed}" + Style.RESET_ALL)
 
             max_affordable_qty = gold // barrel.price
             barrels_to_buy = min(barrel.quantity, barrels_needed, max_affordable_qty)
+            print(Fore.BLUE + f"max_affordable_qty: {max_affordable_qty}" + Style.RESET_ALL)
 
             if barrels_to_buy <= 0:
-                continue  
+                continue
 
             ml_provided = barrels_to_buy * barrel.ml_per_barrel
 
@@ -211,14 +222,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             total_gold_spent += barrels_to_buy * barrel.price
             gold -= barrels_to_buy * barrel.price
             ml_needed[color] -= ml_provided
-            ml_needed[color] = max(ml_needed[color], 0)  
+            ml_needed[color] = max(ml_needed[color], 0)
             print(Fore.BLUE + f"color: {color}, ml_needed[color]: {ml_needed[color]}" + Style.RESET_ALL)
             print(Fore.GREEN + f"Purchased {barrels_to_buy} x {barrel.sku} for {barrels_to_buy * barrel.price} gold, adding {ml_provided} ml to {color}" + Style.RESET_ALL)
-            
+
             # Break out of the loop if we have enough
             if ml_needed[color] <= 0:
                 break
-    
+
     colors = ["green", "red", "blue", "dark"]
     # randomize the order of colors to avoid favoring one color
     random.shuffle(colors)
