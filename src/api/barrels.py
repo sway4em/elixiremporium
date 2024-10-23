@@ -182,7 +182,7 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if barrel.quantity <= 0:
                 continue  
 
-            barrels_needed = (ml_needed_color + barrel.ml_per_barrel - 1) // barrel.ml_per_barrel  
+            barrels_needed = ml_needed_color // barrel.ml_per_barrel  
 
             max_affordable_qty = gold // barrel.price
             barrels_to_buy = min(barrel.quantity, barrels_needed, max_affordable_qty)
