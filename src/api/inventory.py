@@ -112,12 +112,19 @@ def get_capacity_plan():
             print(Fore.BLUE + f"Number of potions: {number_of_potions}, max_potion_storage: {max_potion_storage}, potion_usage_percentage: {potion_usage_percentage}" + Style.RESET_ALL)
             # If usage is more than 70%, buy more capacity
             if ml_usage_percentage > 70:
+                print(Fore.YELLOW + "ML usage is more than 70%" + Style.RESET_ALL)
                 needed_ml_capacity = 1
                 total_cost += 1000
 
             if potion_usage_percentage > 70:
+                print(Fore.YELLOW + "Potion usage is more than 70%" + Style.RESET_ALL)
                 needed_potion_capacity = 1
                 total_cost += 1000
+            
+            # force a capacity purchase for today only
+            needed_ml_capacity = 1
+            needed_potion_capacity = 1
+            total_cost = 2000
 
             # If total cost is more than available gold, buy the one with the highest usage
             if total_cost > available_gold:
