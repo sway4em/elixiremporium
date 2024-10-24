@@ -3,7 +3,8 @@ import sqlalchemy
 from src import database as db
 from sqlalchemy import text
 from colorama import Fore, Style
-
+import random
+import time
 router = APIRouter()
 
 @router.get("/catalog/", tags=["catalog"])
@@ -57,4 +58,8 @@ def get_catalog():
             print(Fore.RED + f"Inventory is empty" + Style.RESET_ALL)
     print(Fore.GREEN + f"Catalog retrieved: {catalog}" + Style.RESET_ALL)
     print(Fore.MAGENTA + f"API called: /catalog/ | response: {catalog}" + Style.RESET_ALL)
-    return catalog
+    # If more than 6 unique items in catalog, return 6 random items
+    if len(catalog) > 6:
+        return random.sample(catalog, 6)
+    else:
+        return catalog
