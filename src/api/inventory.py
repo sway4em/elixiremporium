@@ -120,11 +120,6 @@ def get_capacity_plan():
                 print(Fore.YELLOW + "Potion usage is more than 70%" + Style.RESET_ALL)
                 needed_potion_capacity = 1
                 total_cost += 1000
-            
-            # force a capacity purchase for today only
-            needed_ml_capacity = 1
-            needed_potion_capacity = 1
-            total_cost = 2000
 
             # If total cost is more than available gold, buy the one with the highest usage
             if total_cost > available_gold:
@@ -168,7 +163,7 @@ def deliver_capacity_plan(capacity_purchase: CapacityPurchase, order_id: int):
 
             result = connection.execute(sqlalchemy.text("""
                 UPDATE global_inventory
-                SET 
+                SET
                     gold = gold - :cost,
                     ml_capacity = ml_capacity + :ml_capacity,
                     potion_capacity = potion_capacity + :potion_capacity
