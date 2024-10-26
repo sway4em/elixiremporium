@@ -115,6 +115,10 @@ def get_capacity_plan():
                 print(Fore.YELLOW + "ML usage is more than 70%" + Style.RESET_ALL)
                 needed_ml_capacity = 1
                 total_cost += 1000
+            
+            #force buy ml capacity just for today
+            needed_ml_capacity = 1
+            total_cost = 1000
 
             if potion_usage_percentage > 70:
                 print(Fore.YELLOW + "Potion usage is more than 70%" + Style.RESET_ALL)
