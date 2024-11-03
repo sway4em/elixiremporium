@@ -143,11 +143,16 @@ def get_bottle_plan():
             }
 
             print(Fore.BLUE + f"Inventory: ml_capacity={ml_capacity}, potion_limit={potion_limit}, available_ml={available_ml}" + Style.RESET_ALL)
-            # Fetch all recipes
+            
+            # Fetch all recipes with their current stock and target
             recipes = connection.execute(
                 text("""
-                    SELECT id, name, red, green, blue, dark
-                    FROM recipes
+                    SELECT r.id, r.name, r.red, r.green, r.blue, r.dark, 
+                           COALESCE(i.stock, 0) as current_stock, 
+                           p.target
+                    FROM recipes r
+                    LEFT JOIN inventory i ON r.id = i.potion_id
+                    LEFT JOIN prices p ON r.id = p.potion_id
                 """)
             ).mappings().fetchall()
 
@@ -177,13 +182,23 @@ def get_bottle_plan():
                     green = recipe["green"]
                     blue = recipe["blue"]
                     dark = recipe["dark"]
+                    current_stock = recipe["current_stock"]
+                    target = recipe["target"]
                     
+                    # Check if current stock is already over target
+                    if current_stock >= target:
+                        print(Fore.YELLOW + f"Skipping {recipe['name']} as current stock is already over target." + Style.RESET_ALL)
+                        continue
+                    
+                    # Calculate how many more potions we can make before reaching the target
+                    potions_to_target = target - current_stock
                     if (available_ml['red'] >= red and 
                         available_ml['green'] >= green and 
                         available_ml['blue'] >= blue and 
                         available_ml['dark'] >= dark and 
                         total_ml_used + 100 <= ml_capacity and 
-                        total_potions_planned + 1 <= potion_limit):
+                        total_potions_planned + 1 <= potion_limit and
+                        potions_to_target > 0):
                         
                         existing_potion = next(
                             (p for p in bottling_plan 
@@ -192,7 +207,7 @@ def get_bottle_plan():
                         )
                         
                         if existing_potion:
-                            if total_potions_planned + 1 <= potion_limit:
+                            if total_potions_planned + 1 <= potion_limit and existing_potion["quantity"] < potions_to_target:
                                 existing_potion["quantity"] += 1
                                 total_potions_planned += 1
                                 total_ml_used += 100
