@@ -230,9 +230,14 @@ def get_wholesale_purchase_plan(wholesale_catalog: list[Barrel]):
             if ml_needed[color] <= 0:
                 break
 
-    colors = ["green", "red", "blue", "dark"]
+    # colors = ["green", "red", "blue", "dark"]
     # randomize the order of colors to avoid favoring one color
+    # random.shuffle(colors)
+    
+    # buy dark if possible (for today)
+    colors = ["green", "red", "blue"]
     random.shuffle(colors)
+    colors = ["dark"] + colors
     for color in colors:
         if ml_needed[color] > 0:
             print(Fore.CYAN + f"Processing purchases for {color} (ML needed: {ml_needed[color]})" + Style.RESET_ALL)
