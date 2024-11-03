@@ -132,7 +132,7 @@ def post_visits(visit_id: int, customers: list[Customer]):
                         }
                     ).mappings().fetchone()
                     customer_id = customer_result["id"]
-                    
+
                 connection.execute(
                     text("""
                         INSERT INTO visits (customer_id, time_id)
@@ -146,7 +146,6 @@ def post_visits(visit_id: int, customers: list[Customer]):
                         "time_id": current_time_id
                     }
                 )
-                print(Fore.GREEN + f"Recorded visit for customer: {customer.customer_name}" + Style.RESET_ALL)
 
     except Exception as e:
         print(Fore.RED + f"Database error in post_visits: {str(e)}" + Style.RESET_ALL)
@@ -419,7 +418,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 # ).mappings().fetchone()
                 stock_result = connection.execute(
                     text("""
-                        SELECT quantity as stock 
+                        SELECT quantity as stock
                         FROM current_potion_inventory
                         WHERE recipe_id = :potion_id
                     """),
@@ -453,7 +452,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 "description": f"Sale of {total_potions_bought} potions for {total_gold_paid} gold",
                 "cart_id": str(cart_id)
             }).scalar()
-            
+
             # for item in cart_items:
             #     connection.execute(
             #         text("""
@@ -464,7 +463,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             #         {"quantity": item["quantity"], "potion_id": item["recipe_id"]}
             #     )
             #     print(Fore.GREEN + f"Updated stock for potion_id: {item['recipe_id']} by -{item['quantity']}" + Style.RESET_ALL)
-            
+
             for item in cart_items:
                 connection.execute(
                     text("""
@@ -511,4 +510,4 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
     return {
         "total_potions_bought": total_potions_bought,
         "total_gold_paid": total_gold_paid
-    } 
+    }
