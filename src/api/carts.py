@@ -84,6 +84,9 @@ class CreateCartRequest(BaseModel):
     level: int
     time_id: int
 
+class CartCheckout(BaseModel):
+    payment: str
+
 # Update visits table
 @router.post("/visits/{visit_id}")
 def post_visits(visit_id: int, customers: list[Customer]):
@@ -275,103 +278,6 @@ def set_item_quantity(cart_id: int, item_sku: str, cart_item: CartItem):
     print(Fore.MAGENTA + f"API called: /{cart_id}/items/{item_sku} with cart_item: {cart_item} | response: [success: True]" + Style.RESET_ALL)
     return {"success": True}
 
-class CartCheckout(BaseModel):
-    payment: str
-
-# Checkout cart
-# @router.post("/{cart_id}/checkout")
-# def checkout(cart_id: int, cart_checkout: CartCheckout):
-#     print(Fore.RED + f"Calling /{cart_id}/checkout endpoint" + Style.RESET_ALL)
-#     print(Fore.YELLOW + f"cart_id: {cart_id}" + Style.RESET_ALL)
-#     print(Fore.GREEN + f"cart_checkout: {cart_checkout}" + Style.RESET_ALL)
-
-#     try:
-#         with db.engine.begin() as connection:
-
-#             cart = connection.execute(
-#                 text("SELECT * FROM carts WHERE id = :cart_id"),
-#                 {"cart_id": cart_id}
-#             ).mappings().fetchone()
-
-#             if not cart:
-#                 raise HTTPException(status_code=404, detail="Cart not found")
-
-#             # Get cart items
-#             cart_items = connection.execute(
-#                 text("""
-#                     SELECT cli.recipe_id, cli.quantity, p.rp AS price
-#                     FROM cart_line_items cli
-#                     JOIN prices p ON cli.recipe_id = p.potion_id
-#                     WHERE cli.cart_id = :cart_id
-#                 """),
-#                 {"cart_id": cart_id}
-#             ).mappings().fetchall()
-
-#             if not cart_items:
-#                 raise HTTPException(status_code=400, detail="Cart is empty")
-
-#             total_potions_bought = 0
-#             total_gold_paid = 0
-
-#             # Calculate total potions bought and total cost
-#             for item in cart_items:
-
-#                 stock_result = connection.execute(
-#                     text("""
-#                         SELECT stock FROM inventory
-#                         WHERE potion_id = :potion_id
-#                     """),
-#                     {"potion_id": item["recipe_id"]}
-#                 ).mappings().fetchone()
-
-#                 if not stock_result:
-#                     raise HTTPException(status_code=400, detail=f"Inventory data not found for potion_id: {item['recipe_id']}")
-
-#                 current_stock = stock_result["stock"]
-
-#                 if item["quantity"] > current_stock:
-#                     raise HTTPException(
-#                         status_code=400,
-#                         detail=f"Not enough stock for potion_id: {item['recipe_id']}. Available: {current_stock}, Requested: {item['quantity']}"
-#                     )
-
-#                 total_potions_bought += item["quantity"]
-#                 total_gold_paid += item["quantity"] * item["price"]
-
-#             for item in cart_items:
-#                 connection.execute(
-#                     text("""
-#                         UPDATE inventory
-#                         SET stock = stock - :quantity
-#                         WHERE potion_id = :potion_id
-#                     """),
-#                     {"quantity": item["quantity"], "potion_id": item["recipe_id"]}
-#                 )
-#                 print(Fore.GREEN + f"Updated stock for potion_id: {item['recipe_id']} by -{item['quantity']}" + Style.RESET_ALL)
-
-#             connection.execute(
-#                 text("""
-#                     UPDATE global_inventory
-#                     SET gold = gold + :total_gold_paid
-#                 """),
-#                 {"total_gold_paid": total_gold_paid}
-#             )
-#             print(Fore.GREEN + f"Updated global gold by +{total_gold_paid}" + Style.RESET_ALL)
-
-#     except HTTPException as he:
-#         raise he
-#     except Exception as e:
-#         print(Fore.RED + f"Database error in checkout: {str(e)}" + Style.RESET_ALL)
-#         raise HTTPException(status_code=500, detail="Failed to process checkout.")
-
-#     print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold paid: {total_gold_paid}" + Style.RESET_ALL)
-#     print(Fore.MAGENTA + f"API called: /{cart_id}/checkout with cart_checkout: {cart_checkout} | response: [total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}]" + Style.RESET_ALL)
-#     print(Style.RESET_ALL)
-#     return {
-#         "total_potions_bought": total_potions_bought,
-#         "total_gold_paid": total_gold_paid
-#     }
-
 @router.post("/{cart_id}/checkout")
 def checkout(cart_id: int, cart_checkout: CartCheckout):
     print(Fore.RED + f"Calling /{cart_id}/checkout endpoint" + Style.RESET_ALL)
@@ -409,13 +315,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
             # Calculate total potions bought and total cost
             for item in cart_items:
 
-                # stock_result = connection.execute(
-                #     text("""
-                #         SELECT stock FROM inventory
-                #         WHERE potion_id = :potion_id
-                #     """),
-                #     {"potion_id": item["recipe_id"]}
-                # ).mappings().fetchone()
                 stock_result = connection.execute(
                     text("""
                         SELECT quantity as stock
@@ -453,17 +352,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 "cart_id": str(cart_id)
             }).scalar()
 
-            # for item in cart_items:
-            #     connection.execute(
-            #         text("""
-            #             UPDATE inventory
-            #             SET stock = stock - :quantity
-            #             WHERE potion_id = :potion_id
-            #         """),
-            #         {"quantity": item["quantity"], "potion_id": item["recipe_id"]}
-            #     )
-            #     print(Fore.GREEN + f"Updated stock for potion_id: {item['recipe_id']} by -{item['quantity']}" + Style.RESET_ALL)
-
             for item in cart_items:
                 connection.execute(
                     text("""
@@ -473,19 +361,11 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                     {
                         "transaction_id": transaction_id,
                         "recipe_id": item["recipe_id"],
-                        "quantity": -item["quantity"]  # Negative because we're reducing stock
+                        "quantity": -item["quantity"]  # negative because we're reducing stock
                     }
                 )
                 print(Fore.GREEN + f"Added potion ledger entry for potion_id: {item['recipe_id']} with -{item['quantity']}" + Style.RESET_ALL)
 
-            # connection.execute(
-            #     text("""
-            #         UPDATE global_inventory
-            #         SET gold = gold + :total_gold_paid
-            #     """),
-            #     {"total_gold_paid": total_gold_paid}
-            # )
-            # print(Fore.GREEN + f"Updated global gold by +{total_gold_paid}" + Style.RESET_ALL)
             connection.execute(
                 text("""
                     INSERT INTO gold_ledger (transaction_id, change)
@@ -493,7 +373,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
                 """),
                 {
                     "transaction_id": transaction_id,
-                    "change": total_gold_paid  # Positive because we're receiving gold
+                    "change": total_gold_paid
                 }
             )
             print(Fore.GREEN + f"Added gold ledger entry for +{total_gold_paid}" + Style.RESET_ALL)
