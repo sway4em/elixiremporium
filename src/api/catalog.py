@@ -56,6 +56,8 @@ def get_catalog():
 
     # if more than 6 unique items in catalog, return 6 random items
     if len(catalog) > 6:
-        return random.sample(catalog, 6)
+        shortened_catalog = random.sample(catalog, 6)
+        print(Fore.GREEN + f"Shortened catalog: {shortened_catalog}" + Style.RESET_ALL)
+        return shortened_catalog
     else:
         return catalog
