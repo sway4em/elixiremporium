@@ -314,7 +314,6 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
 
             # Calculate total potions bought and total cost
             for item in cart_items:
-
                 stock_result = connection.execute(
                     text("""
                         SELECT quantity as stock
@@ -385,6 +384,7 @@ def checkout(cart_id: int, cart_checkout: CartCheckout):
         raise HTTPException(status_code=500, detail="Failed to process checkout.")
 
     print(Fore.BLUE + f"Checkout complete. Total potions: {total_potions_bought}, Total gold paid: {total_gold_paid}" + Style.RESET_ALL)
+    print(Fore.GREEN + f"Items bought: {cart_items}" + Style.RESET_ALL)
     print(Fore.MAGENTA + f"API called: /{cart_id}/checkout with cart_checkout: {cart_checkout} | response: [total_potions_bought: {total_potions_bought}, total_gold_paid: {total_gold_paid}]" + Style.RESET_ALL)
     print(Style.RESET_ALL)
     return {
