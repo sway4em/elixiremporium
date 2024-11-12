@@ -37,10 +37,15 @@ def search_orders(
     sort_col: search_sort_options = search_sort_options.timestamp,
     sort_order: search_sort_order = search_sort_order.desc,
 ):
+    print(Fore.RED + "Calling /search endpoint" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"customer_name: {customer_name}" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"potion_sku: {potion_sku}" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"search_page: {search_page}" + Style.RESET_ALL)
+    print(Fore.YELLOW + f"sort_col: {sort_col}" + Style.RESET_ALL)
     try:
         with db.engine.begin() as connection:
             query = """
-                SELECT 
+                SELECT
                     cli.id as line_item_id,
                     r.name as item_sku,
                     c.name as customer_name,
@@ -54,18 +59,18 @@ def search_orders(
                 JOIN time t ON ca.time_id = t.id
                 WHERE 1=1
             """
-            
+
             params = {}
-            
+
             # add filters if provided
             if customer_name:
                 query += " AND LOWER(c.name) LIKE LOWER(:customer_name)"
                 params["customer_name"] = f"%{customer_name}%"
-                
+
             if potion_sku:
                 query += " AND LOWER(r.name) LIKE LOWER(:potion_sku)"
                 params["potion_sku"] = f"%{potion_sku}%"
-            
+
             # add sorting
             sort_column_mapping = {
                 search_sort_options.customer_name: "c.name",
@@ -73,13 +78,13 @@ def search_orders(
                 search_sort_options.line_item_total: "line_item_total",
                 search_sort_options.timestamp: "t.created_at"
             }
-            
+
             query += f" ORDER BY {sort_column_mapping[sort_col]} {sort_order.upper()}"
 
             # get total count
             count_query = f"SELECT COUNT(*) as total FROM ({query}) as subquery"
             total_count = connection.execute(text(count_query), params).scalar()
-            
+
             # pagination
             page_size = 5
             if search_page:
@@ -90,28 +95,28 @@ def search_orders(
                     offset = 0
             else:
                 offset = 0
-            
+
             query += " LIMIT :limit OFFSET :offset"
-            params["limit"] = page_size + 1 
+            params["limit"] = page_size + 1
             params["offset"] = offset
 
             results = connection.execute(text(query), params).mappings().fetchall()
-            
+
             has_next = len(results) > page_size
             actual_results = results[:page_size]
-            
+
             next_cursor = ""
             if has_next:
                 next_cursor = base64.b64encode(
                     json.dumps({"offset": offset + page_size}).encode()
                 ).decode()
-                
+
             previous_cursor = ""
             if offset > 0:
                 previous_cursor = base64.b64encode(
                     json.dumps({"offset": max(0, offset - page_size)}).encode()
                 ).decode()
-            
+
             # format results
             # formatted_results = [{
             #     "line_item_id": row["line_item_id"],
@@ -120,7 +125,7 @@ def search_orders(
             #     "line_item_total": float(row["line_item_total"]),
             #     "timestamp": row["timestamp"].isoformat() + "Z"
             # } for row in actual_results]
-            
+
             # return {
             #     "previous": previous_cursor,
             #     "next": next_cursor,
@@ -134,7 +139,7 @@ def search_orders(
                 elif isinstance(timestamp, datetime):
                     if timestamp.tzinfo is None:
                         timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
-                
+
                 formatted_results.append({
                     "line_item_id": row["line_item_id"],
                     "item_sku": row["item_sku"],
@@ -142,7 +147,16 @@ def search_orders(
                     "line_item_total": float(row["line_item_total"]),
                     "timestamp": timestamp.isoformat().replace("+00:00", "Z")
                 })
-            
+
+            print(Fore.GREEN + f"Total results: {len(formatted_results)}" + Style.RESET_ALL)
+            print(Fore.BLUE + f"Next cursor: {next_cursor}" + Style.RESET_ALL)
+            print(Fore.BLUE + f"Previous cursor: {previous_cursor}" + Style.RESET_ALL)
+            return {
+                "previous": previous_cursor,
+                "next": next_cursor,
+                "results": formatted_results
+            }
+
     except Exception as e:
         print(Fore.RED + f"Database error in search_orders: {str(e)}" + Style.RESET_ALL)
         raise HTTPException(status_code=500, detail="Failed to search orders.")
