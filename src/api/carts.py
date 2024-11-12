@@ -8,6 +8,7 @@ from colorama import Fore, Style
 import requests
 import base64
 import json
+from datetime import datetime
 
 router = APIRouter(
     prefix="/carts",
@@ -112,19 +113,35 @@ def search_orders(
                 ).decode()
             
             # format results
-            formatted_results = [{
-                "line_item_id": row["line_item_id"],
-                "item_sku": row["item_sku"],
-                "customer_name": row["customer_name"],
-                "line_item_total": float(row["line_item_total"]),
-                "timestamp": row["timestamp"].isoformat() + "Z"
-            } for row in actual_results]
+            # formatted_results = [{
+            #     "line_item_id": row["line_item_id"],
+            #     "item_sku": row["item_sku"],
+            #     "customer_name": row["customer_name"],
+            #     "line_item_total": float(row["line_item_total"]),
+            #     "timestamp": row["timestamp"].isoformat() + "Z"
+            # } for row in actual_results]
             
-            return {
-                "previous": previous_cursor,
-                "next": next_cursor,
-                "results": formatted_results
-            }
+            # return {
+            #     "previous": previous_cursor,
+            #     "next": next_cursor,
+            #     "results": formatted_results
+            # }
+            formatted_results = []
+            for row in actual_results:
+                timestamp = row["timestamp"]
+                if isinstance(timestamp, str):
+                    timestamp = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+                elif isinstance(timestamp, datetime):
+                    if timestamp.tzinfo is None:
+                        timestamp = timestamp.replace(tzinfo=datetime.timezone.utc)
+                
+                formatted_results.append({
+                    "line_item_id": row["line_item_id"],
+                    "item_sku": row["item_sku"],
+                    "customer_name": row["customer_name"],
+                    "line_item_total": float(row["line_item_total"]),
+                    "timestamp": timestamp.isoformat().replace("+00:00", "Z")
+                })
             
     except Exception as e:
         print(Fore.RED + f"Database error in search_orders: {str(e)}" + Style.RESET_ALL)
