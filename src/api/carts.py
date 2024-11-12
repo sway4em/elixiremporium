@@ -6,6 +6,8 @@ from src import database as db
 from sqlalchemy import text
 from colorama import Fore, Style
 import requests
+import base64
+import json
 
 router = APIRouter(
     prefix="/carts",
@@ -34,44 +36,99 @@ def search_orders(
     sort_col: search_sort_options = search_sort_options.timestamp,
     sort_order: search_sort_order = search_sort_order.desc,
 ):
-    """
-    Search for cart line items by customer name and/or potion sku.
-
-    Customer name and potion sku filter to orders that contain the
-    string (case insensitive). If the filters aren't provided, no
-    filtering occurs on the respective search term.
-
-    Search page is a cursor for pagination. The response to this
-    search endpoint will return previous or next if there is a
-    previous or next page of results available. The token passed
-    in that search response can be passed in the next search request
-    as search page to get that page of results.
-
-    Sort col is which column to sort by and sort order is the direction
-    of the search. They default to searching by timestamp of the order
-    in descending order.
-
-    The response itself contains a previous and next page token (if
-    such pages exist) and the results as an array of line items. Each
-    line item contains the line item id (must be unique), item sku,
-    customer name, line item total (in gold), and timestamp of the order.
-    Your results must be paginated, the max results you can return at any
-    time is 5 total line items.
-    """
-
-    return {
-        "previous": "",
-        "next": "",
-        "results": [
-            {
-                "line_item_id": 1,
-                "item_sku": "1 oblivion potion",
-                "customer_name": "Scaramouche",
-                "line_item_total": 50,
-                "timestamp": "2021-01-01T00:00:00Z",
+    try:
+        with db.engine.begin() as connection:
+            query = """
+                SELECT 
+                    cli.id as line_item_id,
+                    r.name as item_sku,
+                    c.name as customer_name,
+                    cli.quantity * p.rp as line_item_total,
+                    t.created_at as timestamp
+                FROM cart_line_items cli
+                JOIN carts ca ON cli.cart_id = ca.id
+                JOIN customers c ON ca.customer_id = c.id
+                JOIN recipes r ON cli.recipe_id = r.id
+                JOIN prices p ON r.id = p.potion_id
+                JOIN time t ON ca.time_id = t.id
+                WHERE 1=1
+            """
+            
+            params = {}
+            
+            # add filters if provided
+            if customer_name:
+                query += " AND LOWER(c.name) LIKE LOWER(:customer_name)"
+                params["customer_name"] = f"%{customer_name}%"
+                
+            if potion_sku:
+                query += " AND LOWER(r.name) LIKE LOWER(:potion_sku)"
+                params["potion_sku"] = f"%{potion_sku}%"
+            
+            # add sorting
+            sort_column_mapping = {
+                search_sort_options.customer_name: "c.name",
+                search_sort_options.item_sku: "r.name",
+                search_sort_options.line_item_total: "line_item_total",
+                search_sort_options.timestamp: "t.created_at"
             }
-        ],
-    }
+            
+            query += f" ORDER BY {sort_column_mapping[sort_col]} {sort_order.upper()}"
+
+            # get total count
+            count_query = f"SELECT COUNT(*) as total FROM ({query}) as subquery"
+            total_count = connection.execute(text(count_query), params).scalar()
+            
+            # pagination
+            page_size = 5
+            if search_page:
+                try:
+                    cursor_data = json.loads(base64.b64decode(search_page.encode()).decode())
+                    offset = cursor_data.get("offset", 0)
+                except:
+                    offset = 0
+            else:
+                offset = 0
+            
+            query += " LIMIT :limit OFFSET :offset"
+            params["limit"] = page_size + 1 
+            params["offset"] = offset
+
+            results = connection.execute(text(query), params).mappings().fetchall()
+            
+            has_next = len(results) > page_size
+            actual_results = results[:page_size]
+            
+            next_cursor = ""
+            if has_next:
+                next_cursor = base64.b64encode(
+                    json.dumps({"offset": offset + page_size}).encode()
+                ).decode()
+                
+            previous_cursor = ""
+            if offset > 0:
+                previous_cursor = base64.b64encode(
+                    json.dumps({"offset": max(0, offset - page_size)}).encode()
+                ).decode()
+            
+            # format results
+            formatted_results = [{
+                "line_item_id": row["line_item_id"],
+                "item_sku": row["item_sku"],
+                "customer_name": row["customer_name"],
+                "line_item_total": float(row["line_item_total"]),
+                "timestamp": row["timestamp"].isoformat() + "Z"
+            } for row in actual_results]
+            
+            return {
+                "previous": previous_cursor,
+                "next": next_cursor,
+                "results": formatted_results
+            }
+            
+    except Exception as e:
+        print(Fore.RED + f"Database error in search_orders: {str(e)}" + Style.RESET_ALL)
+        raise HTTPException(status_code=500, detail="Failed to search orders.")
 
 class Customer(BaseModel):
     customer_name: str
